@@ -1,0 +1,2244 @@
+<!DOCTYPE html>
+<!--
+    YUGANK: THE UFO HUNTER
+    
+    ✨ Copyright © 2025 Yogender Solanki. All rights reserved.
+    💝 Made with Love for Yugank Solanki
+    
+    A fun, interactive UFO hunting game with heat-seeking missiles,
+    explosive effects, and hilarious Hindi dialogues!
+    
+    Features:
+    - Heat-seeking fireworks with multiple seeking modes
+    - 6 different missile types with unique visual effects
+    - 4 blast variation types with specialized particles
+    - Multi-input controls (keyboard, mouse, touch)
+    - Realistic physics and anti-corner camping mechanics
+    - Funny Hindi dialogues and sound effects
+    
+    Created: September 2025
+    Author: Yogender Solanki
+    In Love of: Yugank Solanki ❤️
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yugank: The UFO Hunter</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: linear-gradient(to bottom, #000428 0%, #004e92 100%);
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            display: block;
+            cursor: crosshair;
+        }
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+        #instructions {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(45deg, #000428, #004e92, #009ffd);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            animation: pulseBackground 3s ease-in-out infinite;
+            z-index: 1000;
+        }
+        #startScreen h1 {
+            font-size: 4em;
+            margin: 0;
+            text-shadow: 0 0 20px #00ff88;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        #startScreen p {
+            font-size: 1.5em;
+            margin: 20px 0;
+            opacity: 0.8;
+        }
+        #startButton {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            border: none;
+            color: white;
+            padding: 20px 40px;
+            font-size: 1.5em;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(78, 205, 196, 0.5);
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+        #startButton:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(78, 205, 196, 0.8);
+        }
+
+        #controlsButton {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        #controlsButton:hover {
+            background: linear-gradient(45deg, #764ba2, #667eea);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        #instructions {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid #667eea;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            max-width: 300px;
+            z-index: 999;
+            transition: all 0.3s ease;
+            transform: translateX(100%);
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        #instructions.show {
+            transform: translateX(0);
+            opacity: 1;
+            visibility: visible;
+        }
+
+        #instructions p {
+            margin: 8px 0;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        @keyframes pulseBackground {
+            0%, 100% { background: linear-gradient(45deg, #000428, #004e92, #009ffd); }
+            50% { background: linear-gradient(45deg, #004e92, #009ffd, #00d2ff); }
+        }
+        @keyframes glow {
+            from { text-shadow: 0 0 20px #00ff88; }
+            to { text-shadow: 0 0 30px #00ff88, 0 0 40px #00ff88; }
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="startScreen">
+        <h1>🛸 YUGANK: THE UFO HUNTER 🎆</h1>
+        <p>🎯 Hunt the dodging UFO with heat-seeking fireworks!</p>
+        <p>🎮 Move mouse to aim • Press any key OR click/tap to fire</p>
+        <p>💥 UFO will try to dodge your shots!</p>
+        <button id="startButton">START HUNTING</button>
+        
+        <div style="margin-top: 30px; font-size: 12px; color: rgba(255,255,255,0.7); text-align: center;">
+            <p>💝 <strong>Made with Love for Yugank Solanki</strong> 💝</p>
+            <p>© 2025 Yogender Solanki | All Rights Reserved</p>
+            <p style="font-size: 10px; margin-top: 10px;">🎮 Featuring Hindi dialogues, realistic physics & explosive fun! 🎮</p>
+        </div>
+    </div>
+    
+    <div id="ui" class="hidden">
+        <h2>🎆 Yugank: The UFO Hunter 🛸</h2>
+        <p>Score: <span id="score">0</span></p>
+        <p>Hits: <span id="hits">0</span></p>
+        <p>Kills: <span id="kills">0</span></p>
+        <p>UFO Health: <span id="ufoHealth">100</span>%</p>
+    </div>
+    
+    <div id="copyrightNotice" class="hidden" style="position: fixed; bottom: 20px; right: 20px; font-size: 11px; color: #000000; text-align: right; z-index: 100; pointer-events: none; background: rgba(255,255,255,0.1); padding: 8px 12px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); backdrop-filter: blur(10px);">
+        <p style="margin: 2px 0; font-weight: bold; text-shadow: 1px 1px 2px rgba(255,255,255,0.1);">💝 Made with Love for Yugank</p>
+    </div>
+    
+    <button id="controlsButton" class="hidden">🎮 Controls</button>
+    
+    <div id="instructions">
+        <p><strong>🎮 Controls:</strong></p>
+        <p>• Move mouse to aim cannon</p>
+        <p>• Press any key OR click/tap anywhere to fire!</p>
+        <p>• Different keys = different colors!</p>
+        <p>• Mouse/touch = random colors!</p>
+        <p>🎯 UFO will dodge your fireworks!</p>
+    </div>
+    <canvas id="gameCanvas" class="hidden"></canvas>
+    <script>
+        /*
+         * YUGANK: THE UFO HUNTER - Game Engine
+         * 
+         * ✨ Copyright © 2025 Yogender Solanki. All rights reserved.
+         * 💝 Made with Love for Yugank Solanki
+         * 
+         * This game features advanced physics, multiple missile types,
+         * realistic UFO AI, Hindi dialogues, and explosive visual effects.
+         * 
+         * Special Features:
+         * - Heat-seeking missiles with 3 different seeking modes
+         * - 6 unique missile types with custom particle effects
+         * - 4 blast variation types with specialized animations
+         * - Multi-platform input support (keyboard/mouse/touch)
+         * - Anti-corner camping UFO AI with boundary forces
+         * - Realistic sound effects and visual feedback
+         * - Funny Hindi dialogues for authentic desi gaming experience
+         * 
+         * Development: September 2025
+         * Programmer: Yogender Solanki
+         * Inspiration: Yugank Solanki ❤️
+         */
+
+        // Declare startGame function first so it's available for onclick
+        function startGame() {
+            console.log('startGame called'); // Debug log
+            
+            // Prevent multiple calls
+            if (gameStarted) {
+                console.log('Game already started, ignoring call');
+                return;
+            }
+            
+            try {
+                gameStarted = true;
+                
+                // Hide start screen
+                const startScreen = document.getElementById('startScreen');
+                if (startScreen) {
+                    startScreen.classList.add('hidden');
+                    console.log('Start screen hidden');
+                } else {
+                    console.error('Start screen element not found');
+                }
+                
+                // Show UI
+                const ui = document.getElementById('ui');
+                if (ui) {
+                    ui.classList.remove('hidden');
+                    console.log('UI shown');
+                } else {
+                    console.error('UI element not found');
+                }
+                
+                // Show controls button
+                const controlsButton = document.getElementById('controlsButton');
+                if (controlsButton) {
+                    controlsButton.classList.remove('hidden');
+                    console.log('Controls button shown');
+                } else {
+                    console.error('Controls button element not found');
+                }
+                
+                // Show copyright notice in lower right corner
+                const copyrightNotice = document.getElementById('copyrightNotice');
+                if (copyrightNotice) {
+                    copyrightNotice.classList.remove('hidden');
+                    console.log('Copyright notice shown');
+                } else {
+                    console.error('Copyright notice element not found');
+                }
+                
+                // Show game canvas
+                const gameCanvas = document.getElementById('gameCanvas');
+                if (gameCanvas) {
+                    gameCanvas.classList.remove('hidden');
+                    console.log('Game canvas shown');
+                } else {
+                    console.error('Game canvas element not found');
+                }
+                
+                initAudio();
+                
+                // Commando gives game start greeting in Hindi
+                if (commando) {
+                    const startGreetings = [
+                        "चलो शुरू करते हैं!", "तैयार हो जा भाई!", "गेम टाइम!",
+                        "मार देंगे सालों को!", "लेट्स गो!", "धिशूम टाइम!"
+                    ];
+                    commando.speechBubble = startGreetings[Math.floor(Math.random() * startGreetings.length)];
+                    commando.speaking = true;
+                    commando.speakTimer = 120;
+                }
+                
+                console.log('Game started successfully'); // Debug log
+            } catch (error) {
+                console.error('Error starting game:', error);
+            }
+        }
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let gameStarted = false;
+        let score = 0;
+        let hits = 0;
+        let kills = 0;
+        let ufoHealth = 100;
+        let lastFireTime = 0;
+        const fireRateLimit = 150; // Minimum milliseconds between shots
+        const scoreElement = document.getElementById('score');
+        const hitsElement = document.getElementById('hits');
+        const killsElement = document.getElementById('kills');
+        const ufoHealthElement = document.getElementById('ufoHealth');
+
+        // Audio context
+        let audioCtx;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playFireSound() {
+            if (!audioCtx) return;
+            
+            // Enhanced launch sound with multiple layers
+            
+            // Main launch whoosh
+            const mainOsc = audioCtx.createOscillator();
+            const mainGain = audioCtx.createGain();
+            mainOsc.connect(mainGain);
+            mainGain.connect(audioCtx.destination);
+            mainOsc.type = 'sawtooth';
+            mainOsc.frequency.setValueAtTime(200, audioCtx.currentTime);
+            mainOsc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.1);
+            mainOsc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.3);
+            mainGain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            mainGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.3);
+            mainOsc.start(audioCtx.currentTime);
+            mainOsc.stop(audioCtx.currentTime + 0.3);
+            
+            // Cannon blast
+            const blastOsc = audioCtx.createOscillator();
+            const blastGain = audioCtx.createGain();
+            blastOsc.connect(blastGain);
+            blastGain.connect(audioCtx.destination);
+            blastOsc.type = 'square';
+            blastOsc.frequency.setValueAtTime(80, audioCtx.currentTime);
+            blastGain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            blastGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.15);
+            blastOsc.start(audioCtx.currentTime);
+            blastOsc.stop(audioCtx.currentTime + 0.15);
+            
+            // High-pitched whistle
+            const whistleOsc = audioCtx.createOscillator();
+            const whistleGain = audioCtx.createGain();
+            whistleOsc.connect(whistleGain);
+            whistleGain.connect(audioCtx.destination);
+            whistleOsc.type = 'sine';
+            whistleOsc.frequency.setValueAtTime(800, audioCtx.currentTime + 0.05);
+            whistleOsc.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.4);
+            whistleGain.gain.setValueAtTime(0.08, audioCtx.currentTime + 0.05);
+            whistleGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.4);
+            whistleOsc.start(audioCtx.currentTime + 0.05);
+            whistleOsc.stop(audioCtx.currentTime + 0.4);
+        }
+
+        function playExplosionSound() {
+            if (!audioCtx) return;
+            // Bass thump
+            const bass = audioCtx.createOscillator();
+            const bassGain = audioCtx.createGain();
+            bass.connect(bassGain);
+            bassGain.connect(audioCtx.destination);
+            bass.frequency.setValueAtTime(80, audioCtx.currentTime);
+            bassGain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            bassGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+            bass.start(audioCtx.currentTime);
+            bass.stop(audioCtx.currentTime + 0.3);
+
+            // Crackling noise
+            setTimeout(() => {
+                const noise = audioCtx.createBufferSource();
+                const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.5, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < data.length; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                noise.buffer = buffer;
+                const noiseGain = audioCtx.createGain();
+                noise.connect(noiseGain);
+                noiseGain.connect(audioCtx.destination);
+                noiseGain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                noiseGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+                noise.start(audioCtx.currentTime);
+            }, 100);
+        }
+
+        function playUFOHitSound() {
+            if (!audioCtx) return;
+            
+            // Enhanced hit sound with impact and damage effects
+            
+            // Main impact
+            const impact = audioCtx.createOscillator();
+            const impactGain = audioCtx.createGain();
+            impact.connect(impactGain);
+            impactGain.connect(audioCtx.destination);
+            impact.type = 'square';
+            impact.frequency.setValueAtTime(150, audioCtx.currentTime);
+            impact.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.3);
+            impactGain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+            impactGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.3);
+            impact.start(audioCtx.currentTime);
+            impact.stop(audioCtx.currentTime + 0.3);
+            
+            // Metal clang
+            const clang = audioCtx.createOscillator();
+            const clangGain = audioCtx.createGain();
+            clang.connect(clangGain);
+            clangGain.connect(audioCtx.destination);
+            clang.type = 'triangle';
+            clang.frequency.setValueAtTime(800, audioCtx.currentTime);
+            clang.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.4);
+            clangGain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            clangGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.4);
+            clang.start(audioCtx.currentTime);
+            clang.stop(audioCtx.currentTime + 0.4);
+            
+            // Electrical damage sound
+            setTimeout(() => {
+                const spark = audioCtx.createBufferSource();
+                const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.2, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < data.length; i++) {
+                    data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.1));
+                }
+                spark.buffer = buffer;
+                const sparkGain = audioCtx.createGain();
+                spark.connect(sparkGain);
+                sparkGain.connect(audioCtx.destination);
+                sparkGain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                spark.start(audioCtx.currentTime);
+            }, 50);
+        }
+
+        const keyColors = {
+            'a': '#ff0080', 'b': '#80ff00', 'c': '#0080ff', 'd': '#ff8000', 'e': '#8000ff',
+            'f': '#00ff80', 'g': '#ff4080', 'h': '#40ff80', 'i': '#8040ff', 'j': '#ff8040',
+            'k': '#80ff40', 'l': '#4080ff', 'm': '#ff0040', 'n': '#40ff00', 'o': '#0040ff',
+            'p': '#ff4000', 'q': '#00ff40', 'r': '#4000ff', 's': '#ffff00', 't': '#ff00ff',
+            'u': '#00ffff', 'v': '#ffffff', 'w': '#ff6060', 'x': '#60ff60', 'y': '#6060ff',
+            'z': '#ffd700', ' ': '#ff1493', '1': '#ff4500', '2': '#32cd32', '3': '#1e90ff',
+            '4': '#ff1493', '5': '#00ced1', '6': '#ff6347', '7': '#9370db', '8': '#20b2aa',
+            '9': '#f0e68c', '0': '#dda0dd'
+        };
+
+        // Extended color palette for more variety
+        const extendedColors = [
+            '#ff0066', '#66ff00', '#0066ff', '#ff6600', '#6600ff', '#00ff66',
+            '#ff3399', '#99ff33', '#3399ff', '#ff9933', '#9933ff', '#33ff99',
+            '#ff1177', '#77ff11', '#1177ff', '#ff7711', '#7711ff', '#11ff77',
+            '#ff4488', '#88ff44', '#4488ff', '#ff8844', '#8844ff', '#44ff88',
+            '#ff2255', '#55ff22', '#2255ff', '#ff5522', '#5522ff', '#22ff55',
+            '#ff6699', '#99ff66', '#6699ff', '#ff9966', '#9966ff', '#66ff99',
+            '#ff0033', '#33ff00', '#0033ff', '#ff3300', '#3300ff', '#00ff33',
+            '#ff7788', '#88ff77', '#7788ff', '#ff8877', '#8877ff', '#77ff88',
+            '#ffa500', '#a500ff', '#00ffa5', '#5a00ff', '#ff005a', '#005aff',
+            '#ff69b4', '#69b4ff', '#b4ff69', '#b400ff', '#ff00b4', '#00b4ff'
+        ];
+
+        function getRandomColor() {
+            return extendedColors[Math.floor(Math.random() * extendedColors.length)];
+        }
+
+        function getGradientColor(baseColor) {
+            // Create complementary colors for gradient effects
+            const colors = [baseColor];
+            const hex = baseColor.replace('#', '');
+            const r = parseInt(hex.substr(0, 2), 16);
+            const g = parseInt(hex.substr(2, 2), 16);
+            const b = parseInt(hex.substr(4, 2), 16);
+            
+            // Add shifted variations
+            colors.push(`rgb(${Math.min(255, r + 50)}, ${Math.min(255, g + 30)}, ${Math.min(255, b + 20)})`);
+            colors.push(`rgb(${Math.max(0, r - 30)}, ${Math.max(0, g - 20)}, ${Math.max(0, b - 40)})`);
+            
+            return colors;
+        }
+
+        // Game objects
+        let cannon, ufo, commando;
+        let fireworks = [];
+        let particles = [];
+        let stars = [];
+        let grassPatches = [];
+        let mouseX = canvas.width / 2;
+
+        // Create realistic grass texture
+        function createGrassTexture() {
+            const grassCanvas = document.createElement('canvas');
+            grassCanvas.width = 150;
+            grassCanvas.height = 120;
+            const gCtx = grassCanvas.getContext('2d');
+            
+            // Multi-layer ground base
+            const groundGradient = gCtx.createLinearGradient(0, 0, 0, 120);
+            groundGradient.addColorStop(0, '#2d5a3d');
+            groundGradient.addColorStop(0.3, '#1a4d2e');
+            groundGradient.addColorStop(0.7, '#0f3d1f');
+            groundGradient.addColorStop(1, '#0a2d15');
+            gCtx.fillStyle = groundGradient;
+            gCtx.fillRect(0, 0, 150, 120);
+            
+            // Add realistic dirt patches and variations
+            for (let i = 0; i < 30; i++) {
+                const dirtColor = `hsl(${30 + Math.random() * 30}, ${30 + Math.random() * 20}%, ${15 + Math.random() * 15}%)`;
+                gCtx.fillStyle = dirtColor;
+                gCtx.globalAlpha = 0.6 + Math.random() * 0.4;
+                gCtx.beginPath();
+                gCtx.arc(Math.random() * 150, Math.random() * 120, Math.random() * 15 + 5, 0, Math.PI * 2);
+                gCtx.fill();
+            }
+            gCtx.globalAlpha = 1;
+            
+            // Realistic grass blades with variety
+            for (let x = 0; x < 150; x += 1) {
+                for (let attempt = 0; attempt < Math.random() * 4 + 2; attempt++) {
+                    const grassX = x + (Math.random() - 0.5) * 3;
+                    const grassHeight = 20 + Math.random() * 35;
+                    const grassWidth = 0.8 + Math.random() * 1.2;
+                    const grassCurve = (Math.random() - 0.5) * 8;
+                    
+                    // Varied grass colors
+                    const hue = 85 + Math.random() * 25; // Green variations
+                    const saturation = 40 + Math.random() * 30;
+                    const lightness = 35 + Math.random() * 25;
+                    
+                    const gradient = gCtx.createLinearGradient(grassX, 120, grassX + grassCurve, 120 - grassHeight);
+                    gradient.addColorStop(0, `hsl(${hue - 10}, ${saturation}%, ${lightness - 15}%)`);
+                    gradient.addColorStop(0.3, `hsl(${hue}, ${saturation}%, ${lightness}%)`);
+                    gradient.addColorStop(0.7, `hsl(${hue + 5}, ${saturation + 10}%, ${lightness + 10}%)`);
+                    gradient.addColorStop(1, `hsl(${hue + 10}, ${saturation + 15}%, ${lightness + 20}%)`);
+                    
+                    gCtx.strokeStyle = gradient;
+                    gCtx.lineWidth = grassWidth;
+                    gCtx.lineCap = 'round';
+                    
+                    // Draw curved grass blade
+                    gCtx.beginPath();
+                    gCtx.moveTo(grassX, 120);
+                    gCtx.quadraticCurveTo(
+                        grassX + grassCurve * 0.6, 
+                        120 - grassHeight * 0.6,
+                        grassX + grassCurve, 
+                        120 - grassHeight
+                    );
+                    gCtx.stroke();
+                }
+            }
+            
+            // Add small rocks and details
+            for (let i = 0; i < 15; i++) {
+                gCtx.fillStyle = `hsl(${20 + Math.random() * 20}, 20%, ${25 + Math.random() * 15}%)`;
+                const rockSize = Math.random() * 4 + 1;
+                gCtx.beginPath();
+                gCtx.arc(Math.random() * 150, 100 + Math.random() * 20, rockSize, 0, Math.PI * 2);
+                gCtx.fill();
+            }
+            
+            return grassCanvas;
+        }
+
+        class Commando {
+            constructor() {
+                this.x = canvas.width / 2 - 120; // Position near cannon, adjusted for larger size
+                this.y = canvas.height - 80; // Adjusted for larger size
+                this.width = 60; // Increased from 40 to 60 (1.5x)
+                this.height = 75; // Increased from 50 to 75 (1.5x)
+                this.animFrame = 0;
+                this.speaking = false;
+                this.speakTimer = 0;
+                this.speechBubble = "";
+                this.speechPhrases = [
+                    // English phrases
+                    "FIRE!", "Take 'em down!", "Nice shot!", "Got 'em!", 
+                    "Reload!", "Target acquired!", "Keep firing!", "Boom!",
+                    
+                    // Funny Hindi dialogues in Devanagari
+                    "चप्पा!", "का हुआ?", "धिशूम!", "मार दो घुसपैठिये को!",
+                    "अरे यार!", "खतम टाटा बाय बाय!", "गोली मार भेजे में!",
+                    "ठोको इसको!", "उड़ा दो!", "पकड़ लिया!",
+                    "क्यूंकि मैं हूं हीरो!", "मरते दम तक!", "बहुत हार्ड!",
+                    "सही पकड़े हैं!", "लगा दिया ना!", "बल्ले बल्ले!",
+                    "वाह भाई वाह!", "एकदम मस्त!",
+                    "उठ जा बेटा!", "भारी पड़ेगी!"
+                ];
+            }
+
+            speak() {
+                this.speaking = true;
+                this.speakTimer = 60; // 1 second at 60fps
+                this.speechBubble = this.speechPhrases[Math.floor(Math.random() * this.speechPhrases.length)];
+            }
+
+            update() {
+                this.animFrame += 0.1;
+                if (this.speakTimer > 0) {
+                    this.speakTimer--;
+                    if (this.speakTimer <= 0) {
+                        this.speaking = false;
+                    }
+                }
+            }
+
+            draw() {
+                ctx.save();
+                
+                // Speech bubble (scaled for larger character)
+                if (this.speaking) {
+                    const bubbleX = this.x + 30; // Adjusted for larger size
+                    const bubbleY = this.y - 50; // Adjusted for larger size
+                    const bubbleWidth = this.speechBubble.length * 9 + 25; // Slightly larger
+                    const bubbleHeight = 30; // Increased size
+                    
+                    // Bubble background
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                    ctx.strokeStyle = '#333';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.roundRect(bubbleX - bubbleWidth/2, bubbleY - bubbleHeight/2, bubbleWidth, bubbleHeight, 10);
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    // Bubble pointer
+                    ctx.beginPath();
+                    ctx.moveTo(bubbleX - 8, bubbleY + bubbleHeight/2);
+                    ctx.lineTo(bubbleX, bubbleY + bubbleHeight/2 + 12);
+                    ctx.lineTo(bubbleX + 8, bubbleY + bubbleHeight/2);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    // Text (larger font)
+                    ctx.fillStyle = '#333';
+                    ctx.font = 'bold 14px Arial'; // Increased from 12px
+                    ctx.textAlign = 'center';
+                    ctx.fillText(this.speechBubble, bubbleX, bubbleY + 5);
+                }
+                
+                // Commando body (all dimensions scaled by 1.5x)
+                const bobbing = Math.sin(this.animFrame) * 3; // Increased bobbing
+                const commandoY = this.y + bobbing;
+                
+                // Shadow (larger)
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.beginPath();
+                ctx.ellipse(this.x, this.y + this.height/2 + 8, this.width/2, 12, 0, 0, Math.PI * 2); // Scaled shadow
+                ctx.fill();
+                
+                // Legs (scaled)
+                ctx.fillStyle = '#2d4a2b'; // Dark green
+                ctx.fillRect(this.x - 12, commandoY + 38, 9, 30); // Scaled leg dimensions
+                ctx.fillRect(this.x + 3, commandoY + 38, 9, 30);
+                
+                // Boots (scaled)
+                ctx.fillStyle = '#1a1a1a';
+                ctx.fillRect(this.x - 15, commandoY + 63, 15, 12); // Scaled boot dimensions
+                ctx.fillRect(this.x, commandoY + 63, 15, 12);
+                
+                // Body (scaled)
+                const bodyGradient = ctx.createLinearGradient(this.x - 23, commandoY, this.x + 23, commandoY + 45);
+                bodyGradient.addColorStop(0, '#4a7c3a');
+                bodyGradient.addColorStop(1, '#2d4a2b');
+                ctx.fillStyle = bodyGradient;
+                ctx.fillRect(this.x - 23, commandoY, 45, 45); // Scaled body
+                
+                // "Y" on chest (larger)
+                ctx.fillStyle = '#ffff00'; // Yellow Y
+                ctx.font = 'bold 24px Arial'; // Increased from 16px
+                ctx.textAlign = 'center';
+                ctx.fillText('Y', this.x, commandoY + 30); // Adjusted position
+                
+                // Arms (scaled)
+                ctx.fillStyle = '#4a7c3a';
+                const armOffset = Math.sin(this.animFrame * 2) * 4; // Increased arm movement
+                ctx.fillRect(this.x - 30, commandoY + 8 + armOffset, 12, 30); // Scaled arms
+                ctx.fillRect(this.x + 18, commandoY + 8 - armOffset, 12, 30);
+                
+                // Hands (scaled)
+                ctx.fillStyle = '#d4a574'; // Skin tone
+                ctx.beginPath();
+                ctx.arc(this.x - 24, commandoY + 38 + armOffset, 6, 0, Math.PI * 2); // Scaled hands
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(this.x + 24, commandoY + 38 - armOffset, 6, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Head (scaled)
+                ctx.fillStyle = '#d4a574';
+                ctx.beginPath();
+                ctx.arc(this.x, commandoY - 8, 18, 0, Math.PI * 2); // Scaled head
+                ctx.fill();
+                
+                // Helmet (scaled)
+                ctx.fillStyle = '#2d4a2b';
+                ctx.beginPath();
+                ctx.arc(this.x, commandoY - 12, 19, Math.PI, 0); // Scaled helmet
+                ctx.fill();
+                
+                // Face details (scaled)
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(this.x - 6, commandoY - 12, 2, 0, Math.PI * 2); // Scaled eyes
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(this.x + 6, commandoY - 12, 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Mouth (scaled)
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(this.x, commandoY - 5, 4, 0, Math.PI); // Scaled mouth
+                ctx.stroke();
+                
+                ctx.restore();
+            }
+        }
+
+        class Cannon {
+            constructor() {
+                this.x = canvas.width / 2;
+                this.y = canvas.height - 40; // Moved up slightly
+                this.angle = -Math.PI / 2;
+                this.barrelLength = 80; // Increased from 50
+                this.baseRadius = 45; // Increased from 30
+                this.recoil = 0;
+                this.barrelWidth = 18; // Increased barrel thickness
+            }
+
+            update(targetX) {
+                const dx = targetX - this.x;
+                const dy = canvas.height - 150 - this.y;
+                this.angle = Math.atan2(dy, dx);
+                // Allow much wider firing range - can now shoot to corners
+                this.angle = Math.max(-Math.PI * 0.95, Math.min(-Math.PI * 0.05, this.angle));
+                
+                // Reduce recoil
+                this.recoil *= 0.9;
+            }
+
+            fire() {
+                this.recoil = 10;
+            }
+
+            draw() {
+                // Base with shadow - much larger
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.beginPath();
+                ctx.arc(this.x + 5, this.y + 5, this.baseRadius, Math.PI, 0);
+                ctx.fill();
+                
+                // Base with detailed gradient
+                const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.baseRadius);
+                gradient.addColorStop(0, '#8a8ea9');
+                gradient.addColorStop(0.3, '#6a6e89');
+                gradient.addColorStop(0.7, '#4a4e69');
+                gradient.addColorStop(1, '#2a2e49');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.baseRadius, Math.PI, 0);
+                ctx.fill();
+                
+                // Base details - rivets and panels
+                ctx.fillStyle = '#3a3e59';
+                for (let i = 0; i < 8; i++) {
+                    const angle = (i / 8) * Math.PI;
+                    const rivetX = this.x + Math.cos(angle) * (this.baseRadius - 8);
+                    const rivetY = this.y + Math.sin(angle) * (this.baseRadius - 8);
+                    ctx.beginPath();
+                    ctx.arc(rivetX, rivetY, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Barrel with recoil - much thicker
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+                ctx.translate(-this.recoil, 0);
+                
+                // Barrel shadow
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.fillRect(2, -this.barrelWidth/2 - 1, this.barrelLength, this.barrelWidth + 2);
+                
+                // Main barrel with detailed gradient
+                const barrelGradient = ctx.createLinearGradient(0, -this.barrelWidth/2, 0, this.barrelWidth/2);
+                barrelGradient.addColorStop(0, '#1a1a2e');
+                barrelGradient.addColorStop(0.2, '#2a2a3e');
+                barrelGradient.addColorStop(0.5, '#3a3a4e');
+                barrelGradient.addColorStop(0.8, '#2a2a3e');
+                barrelGradient.addColorStop(1, '#1a1a2e');
+                ctx.fillStyle = barrelGradient;
+                ctx.fillRect(0, -this.barrelWidth/2, this.barrelLength, this.barrelWidth);
+                
+                // Barrel details - bands and reinforcements
+                ctx.fillStyle = '#4a4a5e';
+                for (let i = 1; i < 4; i++) {
+                    const bandX = (this.barrelLength / 4) * i;
+                    ctx.fillRect(bandX - 2, -this.barrelWidth/2 - 2, 4, this.barrelWidth + 4);
+                }
+                
+                // Muzzle - larger and more detailed
+                const muzzleGradient = ctx.createRadialGradient(this.barrelLength, 0, 0, this.barrelLength, 0, this.barrelWidth/2 + 4);
+                muzzleGradient.addColorStop(0, '#0f0f1a');
+                muzzleGradient.addColorStop(0.7, '#1f1f2a');
+                muzzleGradient.addColorStop(1, '#2f2f3a');
+                ctx.fillStyle = muzzleGradient;
+                ctx.fillRect(this.barrelLength - 8, -this.barrelWidth/2 - 4, 16, this.barrelWidth + 8);
+                
+                // Muzzle opening
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(this.barrelLength + 4, 0, this.barrelWidth/2 - 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.restore();
+            }
+        }
+
+        class UFO {
+            constructor() {
+                this.x = Math.random() * (canvas.width - 200) + 100;
+                this.y = 80 + Math.random() * 40;
+                this.baseY = this.y;
+                this.vx = (Math.random() < 0.5 ? 1 : -1) * (3 + Math.random() * 2);
+                this.vy = 0;
+                this.width = 100; // Increased size
+                this.height = 50; // Increased size
+                this.bobOffset = Math.random() * Math.PI * 2;
+                this.dodgeTimer = 0;
+                this.isDodging = false;
+                this.dodgeDirection = { x: 0, y: 0 };
+                this.health = 100;
+                this.maxHealth = 100;
+                this.hitFlash = 0;
+                this.invulnerable = false;
+                this.tiltAngle = 0; // For banking during movement
+                this.engineGlow = 0; // For pulsing engine effects
+                
+                // Enhanced blinking lights system
+                this.lights = [];
+                const lightColors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffffff', '#ffa500'];
+                for (let i = 0; i < 12; i++) { // More lights
+                    this.lights.push({
+                        angle: (i / 12) * Math.PI * 2,
+                        phase: Math.random() * Math.PI * 2,
+                        color: lightColors[i % lightColors.length],
+                        intensity: 0.5 + Math.random() * 0.5,
+                        blinkSpeed: 0.1 + Math.random() * 0.2
+                    });
+                }
+                
+                // Exhaust ports for realistic propulsion
+                this.exhaustPorts = [];
+                for (let i = 0; i < 6; i++) {
+                    this.exhaustPorts.push({
+                        angle: (i / 6) * Math.PI * 2,
+                        intensity: 0,
+                        phase: Math.random() * Math.PI * 2
+                    });
+                }
+            }
+
+            takeDamage(damage) {
+                if (this.health <= 0) return; // Already dead, ignore damage
+                
+                this.health = Math.max(0, this.health - damage);
+                this.hitFlash = 10;
+                ufoHealth = this.health;
+                ufoHealthElement.textContent = Math.ceil(this.health);
+                playUFOHitSound();
+                
+                // Make commando react with Hindi dialogues when UFO is hit
+                if (commando && Math.random() < 0.6) { // 60% chance to react
+                    const hitReactions = [
+                        "Arrey yaar! Laga!", "Kya baat hai!", "Dhoom dhadaka!", "Full bindaas!",
+                        "Ekdum jhakaas!", "Solid hit yaar!", "Kamaal kar diya!", "Balle balle! Hit!"
+                    ];
+                    commando.speechBubble = hitReactions[Math.floor(Math.random() * hitReactions.length)];
+                    commando.speaking = true;
+                    commando.speakTimer = 60;
+                }
+                
+                // Add invincibility frames to prevent continuous blasting
+                this.invulnerable = true;
+                setTimeout(() => {
+                    if (this.health > 0) { // Only remove invulnerability if still alive
+                        this.invulnerable = false;
+                    }
+                }, 500); // 0.5 second invulnerability
+            }
+
+            checkForIncomingFireworks(fireworks) {
+                this.isDodging = false;
+                
+                fireworks.forEach(fw => {
+                    const dx = fw.x - this.x;
+                    const dy = fw.y - this.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    // If firework is close and approaching
+                    if (distance < 150 && distance > 30) {
+                        // Calculate if firework is moving towards UFO
+                        const fwSpeed = Math.sqrt(fw.vx * fw.vx + fw.vy * fw.vy);
+                        const approachX = fw.vx / fwSpeed;
+                        const approachY = fw.vy / fwSpeed;
+                        const toUFOX = dx / distance;
+                        const toUFOY = dy / distance;
+                        
+                        // Dot product to see if firework is heading towards UFO
+                        const approaching = (approachX * toUFOX + approachY * toUFOY) > 0.5;
+                        
+                        if (approaching) {
+                            this.isDodging = true;
+                            this.dodgeTimer = 60; // Dodge for 1 second at 60fps
+                            
+                            // Calculate dodge direction (perpendicular to firework approach)
+                            this.dodgeDirection.x = -approachY * (3 + Math.random() * 2);
+                            this.dodgeDirection.y = approachX * (2 + Math.random() * 1.5);
+                            
+                            // Add some randomness
+                            this.dodgeDirection.x += (Math.random() - 0.5) * 2;
+                            this.dodgeDirection.y += (Math.random() - 0.5) * 1;
+                        }
+                    }
+                });
+            }
+
+            update(fireworks) {
+                // Only perform updates if UFO is alive
+                if (this.health <= 0) return;
+                
+                // Check for incoming fireworks and dodge
+                this.checkForIncomingFireworks(fireworks);
+                
+                // Apply dodging behavior
+                if (this.isDodging && this.dodgeTimer > 0) {
+                    this.vx += this.dodgeDirection.x * 0.1;
+                    this.vy += this.dodgeDirection.y * 0.1;
+                    this.dodgeTimer--;
+                    
+                    // Limit dodge speed
+                    const maxDodgeSpeed = 6;
+                    const currentSpeed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                    if (currentSpeed > maxDodgeSpeed) {
+                        this.vx = (this.vx / currentSpeed) * maxDodgeSpeed;
+                        this.vy = (this.vy / currentSpeed) * maxDodgeSpeed;
+                    }
+                } else {
+                    // Normal movement pattern
+                    this.vx *= 0.98; // Slow down gradually
+                    this.vy *= 0.95;
+                    
+                    // Random direction changes
+                    if (Math.random() < 0.02) {
+                        this.vx += (Math.random() - 0.5) * 2;
+                        this.vy += (Math.random() - 0.5) * 1;
+                    }
+                }
+                
+                // Banking effect based on horizontal movement
+                this.tiltAngle += (this.vx * 0.02 - this.tiltAngle) * 0.1;
+                
+                // Engine glow intensity based on movement
+                const currentSpeed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                this.engineGlow = Math.min(currentSpeed / 6, 1);
+                
+                // Apply movement
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                // Boundary checks with bouncing - prevent corner camping
+                const margin = 80; // Increased margin to prevent corner hiding
+                const centerPullStrength = 0.05; // Force to pull UFO away from edges
+                
+                if (this.x <= margin) {
+                    this.x = margin;
+                    this.vx = Math.abs(this.vx) + 1; // Add extra push away from edge
+                    // Add center pull force
+                    this.vx += centerPullStrength * (canvas.width / 2 - this.x) / 100;
+                }
+                if (this.x >= canvas.width - margin) {
+                    this.x = canvas.width - margin;
+                    this.vx = -Math.abs(this.vx) - 1; // Add extra push away from edge
+                    // Add center pull force
+                    this.vx += centerPullStrength * (canvas.width / 2 - this.x) / 100;
+                }
+                if (this.y <= margin) {
+                    this.y = margin;
+                    this.vy = Math.abs(this.vy) + 0.5; // Add extra push away from edge
+                    // Add center pull force
+                    this.vy += centerPullStrength * (canvas.height * 0.2 - this.y) / 100;
+                }
+                if (this.y >= canvas.height * 0.5) { // Prevent going too low
+                    this.y = canvas.height * 0.5;
+                    this.vy = -Math.abs(this.vy) - 0.5; // Add extra push away from edge
+                    // Add center pull force
+                    this.vy += centerPullStrength * (canvas.height * 0.2 - this.y) / 100;
+                }
+                
+                // Anti-corner camping: if UFO stays in corner too long, force it to move
+                const cornerDistance = Math.min(
+                    Math.min(this.x, canvas.width - this.x),
+                    Math.min(this.y, canvas.height * 0.5 - this.y)
+                );
+                
+                if (cornerDistance < margin * 1.5) {
+                    // Force movement towards center
+                    const centerX = canvas.width / 2;
+                    const centerY = canvas.height * 0.25;
+                    const toCenterX = centerX - this.x;
+                    const toCenterY = centerY - this.y;
+                    const toCenterDist = Math.sqrt(toCenterX * toCenterX + toCenterY * toCenterY);
+                    
+                    if (toCenterDist > 0) {
+                        this.vx += (toCenterX / toCenterDist) * 0.3;
+                        this.vy += (toCenterY / toCenterDist) * 0.2;
+                    }
+                }
+                
+                // Bobbing motion
+                this.bobOffset += 0.03;
+                this.y += Math.sin(this.bobOffset) * 0.5;
+                
+                // Update light phases
+                this.lights.forEach(light => {
+                    light.phase += light.blinkSpeed;
+                });
+                
+                // Update exhaust port effects
+                this.exhaustPorts.forEach(port => {
+                    port.phase += 0.2;
+                    port.intensity = this.engineGlow * (0.5 + 0.5 * Math.sin(port.phase));
+                });
+                
+                // Reduce hit flash
+                if (this.hitFlash > 0) this.hitFlash--;
+            }
+
+            draw() {
+                // Only draw if UFO is alive
+                if (this.health <= 0) return;
+                
+                ctx.save();
+                
+                // Apply banking rotation
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.tiltAngle);
+                ctx.translate(-this.x, -this.y);
+                
+                // Hit flash effect
+                if (this.hitFlash > 0) {
+                    ctx.globalAlpha = 0.7 + 0.3 * Math.sin(this.hitFlash * 0.5);
+                    ctx.fillStyle = 'red';
+                    ctx.beginPath();
+                    ctx.ellipse(this.x, this.y, this.width / 2 + 5, this.height / 2 + 5, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                ctx.globalAlpha = 1;
+                
+                // UFO shadow - larger and more realistic
+                ctx.fillStyle = 'rgba(0,0,0,0.4)';
+                ctx.beginPath();
+                ctx.ellipse(this.x + 4, this.y + 4, this.width / 2, this.height / 2, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Main UFO hull with metallic gradient
+                const bodyGradient = ctx.createRadialGradient(this.x, this.y - 15, 0, this.x, this.y, this.width / 2);
+                bodyGradient.addColorStop(0, '#f0f0f0');
+                bodyGradient.addColorStop(0.3, '#e0e0e0');
+                bodyGradient.addColorStop(0.6, '#c0c0c0');
+                bodyGradient.addColorStop(0.85, '#a0a0a0');
+                bodyGradient.addColorStop(1, '#808080');
+                ctx.fillStyle = bodyGradient;
+                ctx.beginPath();
+                ctx.ellipse(this.x, this.y, this.width / 2, this.height / 2, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Hull panels and details
+                ctx.strokeStyle = '#707070';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.ellipse(this.x, this.y, this.width / 2 - 5, this.height / 2 - 3, 0, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // Central ring detail
+                ctx.strokeStyle = '#606060';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.ellipse(this.x, this.y, this.width / 3, this.height / 3, 0, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // Upper dome with enhanced transparency effect
+                const domeGradient = ctx.createRadialGradient(this.x, this.y - 20, 0, this.x, this.y - 10, this.width / 2.5);
+                domeGradient.addColorStop(0, 'rgba(150, 220, 255, 0.95)');
+                domeGradient.addColorStop(0.4, 'rgba(120, 200, 255, 0.7)');
+                domeGradient.addColorStop(0.8, 'rgba(100, 180, 255, 0.4)');
+                domeGradient.addColorStop(1, 'rgba(80, 160, 255, 0.2)');
+                ctx.fillStyle = domeGradient;
+                ctx.beginPath();
+                ctx.ellipse(this.x, this.y - 10, this.width / 2.5, this.height / 2.5, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Dome reflection
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.beginPath();
+                ctx.ellipse(this.x - 8, this.y - 18, this.width / 6, this.height / 6, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Enhanced navigation lights around the rim
+                this.lights.forEach((light, index) => {
+                    const lightX = this.x + Math.cos(light.angle) * (this.width / 2 - 5);
+                    const lightY = this.y + Math.sin(light.angle) * (this.height / 2 - 3);
+                    const brightness = light.intensity * (Math.sin(light.phase) + 1) / 2;
+                    
+                    // Light outer glow
+                    ctx.fillStyle = light.color;
+                    ctx.globalAlpha = brightness * 0.4;
+                    ctx.beginPath();
+                    ctx.arc(lightX, lightY, 12, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Light middle glow
+                    ctx.globalAlpha = brightness * 0.7;
+                    ctx.beginPath();
+                    ctx.arc(lightX, lightY, 6, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Light core
+                    ctx.globalAlpha = brightness;
+                    ctx.beginPath();
+                    ctx.arc(lightX, lightY, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                
+                // Exhaust ports with propulsion effects
+                this.exhaustPorts.forEach(port => {
+                    const portX = this.x + Math.cos(port.angle) * (this.width / 2 - 2);
+                    const portY = this.y + Math.sin(port.angle) * (this.height / 2 - 1);
+                    
+                    if (port.intensity > 0.1) {
+                        // Exhaust glow
+                        const exhaustGradient = ctx.createRadialGradient(portX, portY, 0, portX, portY, 15);
+                        exhaustGradient.addColorStop(0, `rgba(0, 150, 255, ${port.intensity})`);
+                        exhaustGradient.addColorStop(0.5, `rgba(0, 100, 255, ${port.intensity * 0.5})`);
+                        exhaustGradient.addColorStop(1, 'transparent');
+                        
+                        ctx.fillStyle = exhaustGradient;
+                        ctx.globalAlpha = 1;
+                        ctx.beginPath();
+                        ctx.arc(portX, portY, 15, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    
+                    // Port structure
+                    ctx.fillStyle = '#404040';
+                    ctx.globalAlpha = 1;
+                    ctx.beginPath();
+                    ctx.arc(portX, portY, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                
+                ctx.globalAlpha = 1;
+                
+                // Enhanced health bar with better styling
+                const barWidth = this.width;
+                const barHeight = 8;
+                const barY = this.y - this.height / 2 - 20;
+                
+                // Health bar background with border
+                ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                ctx.fillRect(this.x - barWidth / 2 - 2, barY - 2, barWidth + 4, barHeight + 4);
+                ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                ctx.fillRect(this.x - barWidth / 2, barY, barWidth, barHeight);
+                
+                // Health bar foreground with gradient
+                const healthPercent = this.health / this.maxHealth;
+                const healthGradient = ctx.createLinearGradient(this.x - barWidth / 2, barY, this.x + barWidth / 2, barY);
+                
+                if (healthPercent > 0.6) {
+                    healthGradient.addColorStop(0, '#00ff00');
+                    healthGradient.addColorStop(1, '#80ff80');
+                } else if (healthPercent > 0.3) {
+                    healthGradient.addColorStop(0, '#ffff00');
+                    healthGradient.addColorStop(1, '#ffff80');
+                } else {
+                    healthGradient.addColorStop(0, '#ff0000');
+                    healthGradient.addColorStop(1, '#ff8080');
+                }
+                
+                ctx.fillStyle = healthGradient;
+                ctx.fillRect(this.x - barWidth / 2, barY, barWidth * healthPercent, barHeight);
+                
+                ctx.restore();
+            }
+        }
+
+        class Firework {
+            constructor(x, y, color, target) {
+                this.x = x;
+                this.y = y;
+                this.vx = 0;
+                this.vy = -15; // Even faster initial speed
+                this.color = color;
+                this.gradientColors = getGradientColor(color);
+                this.target = target;
+                this.trail = [];
+                this.maxTrailLength = 15; // Reduced trail length
+                this.seekingStrength = 0.35; // Much stronger heat seeking
+                this.maxSpeed = 18; // Maximum speed limit
+                this.mass = 1;
+                this.exploded = false;
+                this.sparkles = [];
+                this.age = 0;
+                this.missileType = Math.floor(Math.random() * 6); // Increased to 6 missile types
+                this.rotationAngle = 0;
+                this.pulsePhase = Math.random() * Math.PI * 2;
+                this.blastType = Math.floor(Math.random() * 4); // 4 different blast types
+                this.seekingMode = Math.floor(Math.random() * 3); // 3 seeking modes
+                this.lastTargetX = target.x;
+                this.lastTargetY = target.y;
+                this.targetVelocityX = 0;
+                this.targetVelocityY = 0;
+                
+                // Create initial sparkles
+                for (let i = 0; i < 8; i++) {
+                    this.sparkles.push({
+                        angle: (i / 8) * Math.PI * 2,
+                        distance: 5 + Math.random() * 10,
+                        phase: Math.random() * Math.PI * 2,
+                        speed: 0.1 + Math.random() * 0.1,
+                        color: this.gradientColors[Math.floor(Math.random() * this.gradientColors.length)]
+                    });
+                }
+            }
+
+            update() {
+                if (this.exploded) return;
+                
+                this.age++;
+                this.rotationAngle += 0.2;
+                this.pulsePhase += 0.15;
+                
+                // Only seek if target is alive
+                if (this.target.health > 0) {
+                    // Track target velocity for better prediction
+                    this.targetVelocityX = this.target.x - this.lastTargetX;
+                    this.targetVelocityY = this.target.y - this.lastTargetY;
+                    this.lastTargetX = this.target.x;
+                    this.lastTargetY = this.target.y;
+                    
+                    // Different seeking modes for variety
+                    let targetX, targetY;
+                    
+                    switch(this.seekingMode) {
+                        case 0: // Aggressive direct seeking
+                            targetX = this.target.x;
+                            targetY = this.target.y;
+                            break;
+                        case 1: // Predictive seeking
+                            const timeToReach = Math.sqrt((this.target.x - this.x) ** 2 + (this.target.y - this.y) ** 2) / this.maxSpeed;
+                            targetX = this.target.x + this.target.vx * timeToReach * 3;
+                            targetY = this.target.y + this.target.vy * timeToReach * 3;
+                            break;
+                        case 2: // Intercept seeking (advanced prediction)
+                            const dx = this.target.x - this.x;
+                            const dy = this.target.y - this.y;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+                            const interceptTime = distance / (this.maxSpeed + 5);
+                            targetX = this.target.x + this.targetVelocityX * interceptTime * 4;
+                            targetY = this.target.y + this.targetVelocityY * interceptTime * 4;
+                            break;
+                    }
+                    
+                    const dx = targetX - this.x;
+                    const dy = targetY - this.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance > 0) {
+                        // Enhanced seeking with mode-specific strengths
+                        let seekingStrength = 0.7; // Base strength increased
+                        
+                        switch(this.seekingMode) {
+                            case 0: seekingStrength = 0.8; break; // Aggressive
+                            case 1: seekingStrength = 0.6; break; // Predictive
+                            case 2: seekingStrength = 0.9; break; // Intercept
+                        }
+                        
+                        // Distance-based adaptation
+                        const distanceMultiplier = Math.min(2.5, 1 + distance / 120);
+                        const adaptiveStrength = seekingStrength * distanceMultiplier;
+                        
+                        // Apply seeking force
+                        const forceX = (dx / distance) * adaptiveStrength;
+                        const forceY = (dy / distance) * adaptiveStrength;
+                        
+                        this.vx += forceX;
+                        this.vy += forceY;
+                        
+                        // Corner-specific seeking boost
+                        const cornerProximity = Math.min(
+                            Math.min(this.target.x, canvas.width - this.target.x),
+                            Math.min(this.target.y, canvas.height * 0.5 - this.target.y)
+                        );
+                        
+                        if (cornerProximity < 100) {
+                            // Extra aggressive seeking when target is in corner
+                            const extraForceX = (dx / distance) * 0.4;
+                            const extraForceY = (dy / distance) * 0.4;
+                            this.vx += extraForceX;
+                            this.vy += extraForceY;
+                        }
+                    }
+                }
+
+                // Minimal gravity for better maneuverability
+                this.vy += 0.01;
+
+                // Dynamic max speed based on seeking mode
+                switch(this.seekingMode) {
+                    case 0: this.maxSpeed = 25; break; // Aggressive - fastest
+                    case 1: this.maxSpeed = 22; break; // Predictive - medium
+                    case 2: this.maxSpeed = 28; break; // Intercept - very fast
+                }
+                
+                const currentSpeed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                if (currentSpeed > this.maxSpeed) {
+                    this.vx = (this.vx / currentSpeed) * this.maxSpeed;
+                    this.vy = (this.vy / currentSpeed) * this.maxSpeed;
+                }
+
+                // Apply velocity
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Add to trail
+                this.trail.push({ 
+                    x: this.x, 
+                    y: this.y, 
+                    age: this.age,
+                    vx: this.vx,
+                    vy: this.vy,
+                    color: this.gradientColors[this.age % this.gradientColors.length]
+                });
+                if (this.trail.length > this.maxTrailLength) {
+                    this.trail.shift();
+                }
+                
+                // Update sparkles
+                this.sparkles.forEach(sparkle => {
+                    sparkle.phase += sparkle.speed;
+                });
+            }
+
+            draw() {
+                if (this.exploded) return;
+                
+                // Enhanced trail with gradient colors
+                this.trail.forEach((point, index) => {
+                    const alpha = (index + 1) / this.trail.length;
+                    const size = alpha * 3; // Reduced size from 5 to 3
+                    const speed = Math.sqrt(point.vx * point.vx + point.vy * point.vy) || 1;
+                    const intensity = Math.min(speed / 10, 1);
+                    
+                    // Trail outer glow (reduced)
+                    ctx.fillStyle = point.color || this.color;
+                    ctx.globalAlpha = alpha * 0.15 * intensity; // Reduced opacity
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, size * 2, 0, Math.PI * 2); // Reduced multiplier
+                    ctx.fill();
+                    
+                    // Trail middle glow (reduced)
+                    ctx.globalAlpha = alpha * 0.3 * intensity; // Reduced opacity
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, size * 1.5, 0, Math.PI * 2); // Reduced multiplier
+                    ctx.fill();
+                    
+                    // Trail core
+                    ctx.globalAlpha = alpha * 0.8;
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                
+                ctx.globalAlpha = 1;
+                
+                // Draw creative missile effects based on type
+                this.drawMissileEffect();
+                
+                ctx.globalAlpha = 1;
+            }
+
+            drawMissileEffect() {
+                const pulseSize = 6 + 2 * Math.sin(this.pulsePhase);
+                
+                switch(this.missileType) {
+                    case 0: // Standard sparkle missile
+                        this.drawSparkleRing();
+                        this.drawPulsingCore(pulseSize);
+                        break;
+                    case 1: // Spinning blade missile
+                        this.drawSpinningBlades();
+                        this.drawPulsingCore(pulseSize);
+                        break;
+                    case 2: // Energy orb missile
+                        this.drawEnergyOrb();
+                        break;
+                    case 3: // Lightning missile
+                        this.drawLightningEffect();
+                        this.drawPulsingCore(pulseSize);
+                        break;
+                    case 4: // Spiral missile
+                        this.drawSpiralEffect();
+                        this.drawPulsingCore(pulseSize);
+                        break;
+                    case 5: // Plasma missile
+                        this.drawPlasmaEffect();
+                        break;
+                }
+                
+                // Add directional thrust effect
+                this.drawThrustFlame();
+            }
+
+            drawSparkleRing() {
+                // Outer sparkle ring
+                this.sparkles.forEach(sparkle => {
+                    const sparkleX = this.x + Math.cos(sparkle.angle + sparkle.phase) * sparkle.distance;
+                    const sparkleY = this.y + Math.sin(sparkle.angle + sparkle.phase) * sparkle.distance;
+                    const brightness = (Math.sin(sparkle.phase * 2) + 1) / 2;
+                    
+                    ctx.fillStyle = sparkle.color;
+                    ctx.globalAlpha = brightness * 0.8;
+                    ctx.beginPath();
+                    ctx.arc(sparkleX, sparkleY, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            }
+
+            drawSpinningBlades() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotationAngle);
+                
+                for (let i = 0; i < 4; i++) {
+                    ctx.rotate(Math.PI / 2);
+                    const gradient = ctx.createLinearGradient(-8, 0, 8, 0);
+                    gradient.addColorStop(0, 'transparent');
+                    gradient.addColorStop(0.5, this.color);
+                    gradient.addColorStop(1, 'transparent');
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.globalAlpha = 0.7;
+                    ctx.fillRect(-8, -1, 16, 2);
+                }
+                ctx.restore();
+            }
+
+            drawEnergyOrb() {
+                // Multi-layered energy orb
+                const layers = 5;
+                for (let i = 0; i < layers; i++) {
+                    const radius = (layers - i) * 3;
+                    const alpha = (i + 1) / layers * 0.3;
+                    const colorShift = Math.sin(this.age * 0.1 + i) * 50;
+                    
+                    ctx.fillStyle = this.gradientColors[i % this.gradientColors.length];
+                    ctx.globalAlpha = alpha;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            drawLightningEffect() {
+                // Electric arcs around the missile
+                for (let i = 0; i < 3; i++) {
+                    const startAngle = (this.age * 0.2 + i * Math.PI * 2 / 3) % (Math.PI * 2);
+                    const arcLength = 15;
+                    const segments = 8;
+                    
+                    ctx.strokeStyle = this.color;
+                    ctx.lineWidth = 2;
+                    ctx.globalAlpha = 0.6 + 0.4 * Math.sin(this.age * 0.3 + i);
+                    
+                    ctx.beginPath();
+                    let currentX = this.x + Math.cos(startAngle) * 8;
+                    let currentY = this.y + Math.sin(startAngle) * 8;
+                    ctx.moveTo(currentX, currentY);
+                    
+                    for (let j = 1; j <= segments; j++) {
+                        const progress = j / segments;
+                        const angle = startAngle + progress * Math.PI * 0.5;
+                        const baseX = this.x + Math.cos(angle) * (8 + progress * arcLength);
+                        const baseY = this.y + Math.sin(angle) * (8 + progress * arcLength);
+                        
+                        // Add lightning zigzag
+                        const zigzag = Math.sin(progress * Math.PI * 4) * 3;
+                        currentX = baseX + Math.cos(angle + Math.PI / 2) * zigzag;
+                        currentY = baseY + Math.sin(angle + Math.PI / 2) * zigzag;
+                        
+                        ctx.lineTo(currentX, currentY);
+                    }
+                    ctx.stroke();
+                }
+            }
+
+            drawPulsingCore(pulseSize) {
+                // Main firework glow layers
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = 0.3;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, pulseSize * 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.globalAlpha = 0.6;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, pulseSize, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.globalAlpha = 1;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            drawThrustFlame() {
+                const thrustAngle = Math.atan2(this.vy, this.vx) + Math.PI;
+                const thrustLength = Math.sqrt(this.vx * this.vx + this.vy * this.vy) * 2;
+                
+                // Create flame gradient
+                const gradient = ctx.createLinearGradient(
+                    this.x, this.y,
+                    this.x + Math.cos(thrustAngle) * Math.min(thrustLength, 20),
+                    this.y + Math.sin(thrustAngle) * Math.min(thrustLength, 20)
+                );
+                gradient.addColorStop(0, this.color);
+                gradient.addColorStop(0.5, '#ff8800');
+                gradient.addColorStop(1, 'transparent');
+                
+                ctx.strokeStyle = gradient;
+                ctx.globalAlpha = 0.8;
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(
+                    this.x + Math.cos(thrustAngle) * Math.min(thrustLength, 20),
+                    this.y + Math.sin(thrustAngle) * Math.min(thrustLength, 20)
+                );
+                ctx.stroke();
+            }
+
+            drawSpiralEffect() {
+                // Spiral energy trail around the missile
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                
+                const spiralTurns = 3;
+                const maxRadius = 12;
+                
+                for (let turn = 0; turn < spiralTurns; turn++) {
+                    ctx.strokeStyle = this.gradientColors[turn % this.gradientColors.length];
+                    ctx.lineWidth = 3;
+                    ctx.globalAlpha = 0.8 - (turn * 0.2);
+                    
+                    ctx.beginPath();
+                    const segments = 20;
+                    for (let i = 0; i <= segments; i++) {
+                        const progress = i / segments;
+                        const angle = (this.age * 0.3 + turn * Math.PI * 2/3 + progress * Math.PI * 4) % (Math.PI * 2);
+                        const radius = maxRadius * (1 - progress) * (0.3 + 0.7 * Math.sin(this.age * 0.1 + turn));
+                        
+                        const x = Math.cos(angle) * radius;
+                        const y = Math.sin(angle) * radius;
+                        
+                        if (i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+
+            drawPlasmaEffect() {
+                // Multi-layered plasma ball with electrical arcs
+                const layers = 6;
+                
+                for (let i = 0; i < layers; i++) {
+                    const radius = (layers - i) * 4;
+                    const alpha = (i + 1) / layers * 0.4;
+                    const intensity = 0.6 + 0.4 * Math.sin(this.age * 0.2 + i);
+                    
+                    // Plasma core
+                    const plasmaGradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, radius);
+                    plasmaGradient.addColorStop(0, this.color);
+                    plasmaGradient.addColorStop(0.4, this.gradientColors[i % this.gradientColors.length]);
+                    plasmaGradient.addColorStop(1, 'transparent');
+                    
+                    ctx.fillStyle = plasmaGradient;
+                    ctx.globalAlpha = alpha * intensity;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                // Electrical arcs
+                for (let i = 0; i < 4; i++) {
+                    const arcAngle = (this.age * 0.15 + i * Math.PI / 2) % (Math.PI * 2);
+                    const arcLength = 20;
+                    
+                    ctx.strokeStyle = this.color;
+                    ctx.lineWidth = 2;
+                    ctx.globalAlpha = 0.7 + 0.3 * Math.sin(this.age * 0.4 + i);
+                    
+                    ctx.beginPath();
+                    const startX = this.x + Math.cos(arcAngle) * 8;
+                    const startY = this.y + Math.sin(arcAngle) * 8;
+                    ctx.moveTo(startX, startY);
+                    
+                    const segments = 6;
+                    for (let j = 1; j <= segments; j++) {
+                        const progress = j / segments;
+                        const baseX = startX + Math.cos(arcAngle) * arcLength * progress;
+                        const baseY = startY + Math.sin(arcAngle) * arcLength * progress;
+                        
+                        // Add random displacement for electrical effect
+                        const displacement = (Math.random() - 0.5) * 8 * (1 - progress);
+                        const currentX = baseX + Math.cos(arcAngle + Math.PI/2) * displacement;
+                        const currentY = baseY + Math.sin(arcAngle + Math.PI/2) * displacement;
+                        
+                        ctx.lineTo(currentX, currentY);
+                    }
+                    ctx.stroke();
+                }
+                ctx.globalAlpha = 1;
+            }
+
+            isOffScreen() {
+                return this.x < -50 || this.x > canvas.width + 50 || this.y < -50 || this.y > canvas.height + 50;
+            }
+
+            hitTarget() {
+                const dx = this.x - this.target.x;
+                const dy = this.y - this.target.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                return distance < 50 && !this.target.invulnerable && this.target.health > 0; // Increased hit radius for larger UFO
+            }
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 12;
+                this.vy = (Math.random() - 0.5) * 12;
+                this.color = color;
+                this.life = 1;
+                this.decay = 0.015 + Math.random() * 0.015;
+                this.gravity = 0.2;
+                this.glitter = Math.random() > 0.6;
+                this.size = 2 + Math.random() * 3;
+                this.spin = Math.random() * 0.2;
+                this.angle = Math.random() * Math.PI * 2;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += this.gravity;
+                this.vx *= 0.99; // Air resistance
+                this.life -= this.decay;
+                this.angle += this.spin;
+            }
+
+            draw() {
+                if (this.glitter) {
+                    ctx.globalAlpha = this.life * (0.5 + 0.5 * Math.sin(Date.now() * 0.02 + this.angle * 10));
+                } else {
+                    ctx.globalAlpha = this.life;
+                }
+                
+                ctx.fillStyle = this.color;
+                
+                // Draw as small star
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+                ctx.beginPath();
+                for (let i = 0; i < 6; i++) {
+                    const angle = (i / 6) * Math.PI * 2;
+                    const radius = i % 2 === 0 ? this.size * this.life : this.size * this.life * 0.5;
+                    const x = Math.cos(angle) * radius;
+                    const y = Math.sin(angle) * radius;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+                
+                ctx.globalAlpha = 1;
+            }
+
+            isDead() {
+                return this.life <= 0;
+            }
+        }
+
+        class RingParticle extends Particle {
+            constructor(x, y, color, angle, speed) {
+                super(x, y, color);
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.life = 1.2;
+                this.originalSpeed = speed;
+            }
+        }
+
+        class StarParticle extends Particle {
+            constructor(x, y, color, starAngle) {
+                super(x, y, color);
+                const spread = (Math.random() - 0.5) * 0.5;
+                const speed = 6 + Math.random() * 8;
+                this.vx = Math.cos(starAngle + spread) * speed;
+                this.vy = Math.sin(starAngle + spread) * speed;
+                this.life = 1.5;
+            }
+        }
+
+        class SpiralParticle extends Particle {
+            constructor(x, y, color, index) {
+                super(x, y, color);
+                this.angle = (index / 100) * Math.PI * 4;
+                this.spiralRadius = index * 0.8;
+                this.spiralSpeed = 0.2;
+                this.life = 1.8;
+            }
+
+            update() {
+                this.angle += this.spiralSpeed;
+                this.spiralRadius += 2;
+                this.x += Math.cos(this.angle) * this.spiralSpeed * 3;
+                this.y += Math.sin(this.angle) * this.spiralSpeed * 3;
+                this.vy += this.gravity;
+                this.life -= this.decay;
+            }
+        }
+
+        function createStars() {
+            stars = [];
+            for (let i = 0; i < 400; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height * 0.7,
+                    size: 0.5 + Math.random() * 2.5,
+                    twinkle: Math.random() * Math.PI * 2,
+                    speed: 0.005 + Math.random() * 0.02,
+                    color: ['white', '#ffffcc', '#ccccff', '#ffcccc', '#ccffcc', '#ffccff'][Math.floor(Math.random() * 6)],
+                    brightness: 0.3 + Math.random() * 0.7,
+                    twinkleSpeed: 0.5 + Math.random() * 2,
+                    sparklePhase: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        function drawStars() {
+            stars.forEach(star => {
+                star.twinkle += star.speed;
+                star.sparklePhase += 0.05;
+                
+                // Enhanced twinkling with multiple effects
+                const baseBrightness = star.brightness * (Math.sin(star.twinkle * star.twinkleSpeed) + 1) / 2;
+                const sparkle = 0.2 + 0.8 * (Math.sin(star.sparklePhase * 3) + 1) / 2;
+                const finalBrightness = baseBrightness * sparkle;
+                
+                // Main star
+                ctx.fillStyle = star.color;
+                ctx.globalAlpha = finalBrightness;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Sparkle cross effect for brighter stars
+                if (star.size > 1.5 && finalBrightness > 0.6) {
+                    ctx.strokeStyle = star.color;
+                    ctx.lineWidth = 1;
+                    ctx.globalAlpha = finalBrightness * 0.8;
+                    
+                    // Vertical sparkle line
+                    ctx.beginPath();
+                    ctx.moveTo(star.x, star.y - star.size * 2);
+                    ctx.lineTo(star.x, star.y + star.size * 2);
+                    ctx.stroke();
+                    
+                    // Horizontal sparkle line
+                    ctx.beginPath();
+                    ctx.moveTo(star.x - star.size * 2, star.y);
+                    ctx.lineTo(star.x + star.size * 2, star.y);
+                    ctx.stroke();
+                }
+                
+                // Distant glow for largest stars
+                if (star.size > 2 && Math.random() < 0.1) {
+                    ctx.globalAlpha = finalBrightness * 0.2;
+                    ctx.beginPath();
+                    ctx.arc(star.x, star.y, star.size * 4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+            ctx.globalAlpha = 1;
+        }
+
+        function drawGround() {
+            const groundHeight = 100;
+            const groundY = canvas.height - groundHeight;
+            
+            // Use the grass texture
+            if (!window.grassTexture) {
+                window.grassTexture = createGrassTexture();
+            }
+            
+            // Tile the grass texture across the ground
+            const pattern = ctx.createPattern(window.grassTexture, 'repeat');
+            ctx.fillStyle = pattern;
+            ctx.fillRect(0, groundY, canvas.width, groundHeight);
+            
+            // Add depth with darker base
+            ctx.fillStyle = 'rgba(26, 77, 46, 0.7)';
+            ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
+        }
+
+        function createExplosion(x, y, color, blastType = 0) {
+            // Performance-optimized explosion with reduced particle counts
+            switch(blastType) {
+                case 0: // Standard explosion (reduced from 80 to 50)
+                    for (let i = 0; i < 50; i++) {
+                        particles.push(new Particle(x, y, color));
+                    }
+                    break;
+                case 1: // Ring explosion (reduced from 60 to 40)
+                    for (let i = 0; i < 40; i++) {
+                        const angle = (i / 40) * Math.PI * 2;
+                        const speed = 8 + Math.random() * 6;
+                        particles.push(new RingParticle(x, y, color, angle, speed));
+                    }
+                    break;
+                case 2: // Star burst (reduced density)
+                    for (let star = 0; star < 6; star++) { // Reduced from 8 to 6 stars
+                        const starAngle = (star / 6) * Math.PI * 2;
+                        for (let i = 0; i < 8; i++) { // Reduced from 10 to 8 particles per star
+                            particles.push(new StarParticle(x, y, color, starAngle));
+                        }
+                    }
+                    break;
+                case 3: // Spiral explosion (reduced from 100 to 60)
+                    for (let i = 0; i < 60; i++) {
+                        particles.push(new SpiralParticle(x, y, color, i));
+                    }
+                    break;
+            }
+            
+            // Add enhanced shockwave effect
+            const shockwaveIntensity = blastType + 1;
+            particles.push({
+                x: x,
+                y: y,
+                radius: 5,
+                maxRadius: 80 + blastType * 20,
+                life: 1,
+                decay: 0.04 / shockwaveIntensity,
+                color: color,
+                update() {
+                    this.radius += (this.maxRadius - this.radius) * 0.25;
+                    this.life -= this.decay;
+                },
+                draw() {
+                    ctx.globalAlpha = this.life * 0.4;
+                    ctx.strokeStyle = this.color;
+                    ctx.lineWidth = 3 + blastType;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.globalAlpha = 1;
+                },
+                isDead() {
+                    return this.life <= 0;
+                }
+            });
+        }
+
+        function createUFODeathExplosion(x, y) {
+            // Optimized massive explosion when UFO is destroyed
+            // Reduced particle count to prevent performance issues
+            for (let ring = 0; ring < 2; ring++) { // Reduced from 3 to 2 rings
+                setTimeout(() => {
+                    // Multiple colored particle bursts (reduced count)
+                    const colors = ['#ff0000', '#ff8000', '#ffff00', '#ffffff', '#ff4080', '#8040ff'];
+                    
+                    // Reduced particle count from 150 to 80 per ring
+                    for (let i = 0; i < 80; i++) {
+                        const color = colors[Math.floor(Math.random() * colors.length)];
+                        particles.push(new Particle(x, y, color));
+                    }
+                    
+                    // Fewer shockwaves (reduced from 3 to 2)
+                    for (let wave = 0; wave < 2; wave++) {
+                        particles.push({
+                            x: x,
+                            y: y,
+                            radius: wave * 25,
+                            maxRadius: 180 + wave * 40, // Slightly smaller for better performance
+                            life: 1,
+                            decay: 0.025, // Faster decay for quicker cleanup
+                            color: colors[wave % colors.length],
+                            update() {
+                                this.radius += (this.maxRadius - this.radius) * 0.18; // Faster expansion
+                                this.life -= this.decay;
+                            },
+                            draw() {
+                                ctx.globalAlpha = this.life * 0.4;
+                                ctx.strokeStyle = this.color;
+                                ctx.lineWidth = 4; // Reduced line width
+                                ctx.beginPath();
+                                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                                ctx.stroke();
+                                ctx.globalAlpha = 1;
+                            },
+                            isDead() {
+                                return this.life <= 0;
+                            }
+                        });
+                    }
+                }, ring * 200); // Staggered explosions
+            }
+            
+            // Screen flash effect
+            particles.push({
+                life: 1,
+                decay: 0.05,
+                update() {
+                    this.life -= this.decay;
+                },
+                draw() {
+                    ctx.globalAlpha = this.life * 0.3;
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.globalAlpha = 1;
+                },
+                isDead() {
+                    return this.life <= 0;
+                }
+            });
+        }
+
+        // Universal fire function that can be called from keyboard, mouse, or touch
+        function fireWeapon(colorKey = null) {
+            if (!gameStarted) return;
+            
+            // Rate limiting to prevent bombardment issues
+            const currentTime = Date.now();
+            if (currentTime - lastFireTime < fireRateLimit) {
+                return; // Too soon, ignore this fire request
+            }
+            lastFireTime = currentTime;
+            
+            // Make commando speak when firing
+            if (commando) {
+                commando.speak();
+            }
+            
+            // Use extended color palette for more variety
+            let color;
+            if (colorKey && keyColors[colorKey]) {
+                color = keyColors[colorKey];
+            } else {
+                color = getRandomColor(); // Random color for mouse/touch or unmapped keys
+            }
+            
+            // 20% chance for rainbow effect
+            if (Math.random() < 0.2) {
+                color = getRandomColor();
+            }
+            
+            const launchX = cannon.x + Math.cos(cannon.angle) * cannon.barrelLength;
+            const launchY = cannon.y + Math.sin(cannon.angle) * cannon.barrelLength;
+            
+            // Only create firework if UFO exists
+            if (ufo) {
+                fireworks.push(new Firework(launchX, launchY, color, ufo));
+                cannon.fire();
+                playFireSound();
+            }
+        }
+
+        function handleKeyPress(e) {
+            fireWeapon(e.key.toLowerCase());
+        }
+
+        // Handle mouse clicks on the game canvas
+        function handleMouseClick(e) {
+            if (!gameStarted) return;
+            
+            // Prevent firing if clicking on UI elements
+            if (e.target.id === 'controlsButton' || e.target.closest('#ui') || e.target.closest('#instructions')) {
+                return;
+            }
+            
+            fireWeapon();
+        }
+
+        // Handle touch events for mobile devices
+        function handleTouch(e) {
+            if (!gameStarted) return;
+            
+            // Prevent default to avoid scrolling
+            e.preventDefault();
+            
+            // Prevent firing if touching UI elements
+            if (e.target.id === 'controlsButton' || e.target.closest('#ui') || e.target.closest('#instructions')) {
+                return;
+            }
+            
+            fireWeapon();
+        }
+
+        function update() {
+            if (!gameStarted) return;
+            
+            // Safety checks to prevent undefined errors
+            if (ufo) ufo.update(fireworks);
+            if (cannon) cannon.update(mouseX);
+            if (commando) commando.update();
+
+            // Limit number of fireworks to prevent performance issues
+            const maxFireworks = 15; // Reduced from 20 to 15 for better performance
+            if (fireworks.length > maxFireworks) {
+                // Remove oldest fireworks without creating explosions to avoid particle spam
+                const toRemove = fireworks.length - maxFireworks;
+                fireworks.splice(0, toRemove);
+            }
+
+            // Update fireworks with safety checks
+            for (let i = fireworks.length - 1; i >= 0; i--) {
+                const fw = fireworks[i];
+                if (!fw) continue; // Skip if firework is undefined
+                
+                fw.update();
+
+                if (fw.hitTarget() && ufo && ufo.health > 0) {
+                    createExplosion(fw.x, fw.y, fw.color, fw.blastType);
+                    ufo.takeDamage(10);
+                    score += 100;
+                    hits++;
+                    scoreElement.textContent = score;
+                    hitsElement.textContent = hits;
+                    playExplosionSound();
+                    fireworks.splice(i, 1);
+                    
+                    // Check if UFO is destroyed
+                    if (ufo && ufo.health <= 0) {
+                        // Create optimized death explosion
+                        createUFODeathExplosion(ufo.x, ufo.y);
+                        
+                        // Commando celebrates with Hindi victory dialogues
+                        if (commando) {
+                            const victoryDialogues = [
+                                "चप्पा!", "का हुआ?",
+                                "खत्म तता बाय बाय!", "उड़ा दिया साले को!", "मौत का सौदागर!",
+                                "भाग जा बेवकूफ!", "गेम ओवर भाई!", "धिशूम धिशूम!",
+                                "जहाज़ वाले को हरा दिया!", "क्योंकि मैं हूँ हीरो!",
+                                "ठोको इसको! खत्म!", "बल्ले बल्ले! जीत गए!"
+                            ];
+                            commando.speechBubble = victoryDialogues[Math.floor(Math.random() * victoryDialogues.length)];
+                            commando.speaking = true;
+                            commando.speakTimer = 120; // Longer celebration
+                        }
+                        
+                        // Award bonus points and increment kill counter
+                        kills++;
+                        score += 1000;
+                        killsElement.textContent = kills;
+                        scoreElement.textContent = score;
+                        
+                        // Simply clear remaining fireworks without creating explosions
+                        // This prevents massive particle spam that causes performance issues
+                        fireworks = []; // Clear all fireworks instantly
+                        
+                        // Respawn UFO immediately with full health
+                        ufo = new UFO();
+                        ufoHealth = 100;
+                        ufoHealthElement.textContent = ufoHealth;
+                    }
+                } else if (fw.isOffScreen()) {
+                    // Commando reacts to misses with Hindi expressions (occasionally)
+                    if (commando && Math.random() < 0.2) { // 20% chance for miss reaction
+                        const missReactions = [
+                            "अरे यार!", "मिस हो गया!", "क्या कर रहा है भाई!",
+                            "फिर से ट्राई कर!", "एम करो यार!", "का हुआ?",
+                            "बेवकूफ बना रहा है!", "फोकस करो!"
+                        ];
+                        commando.speechBubble = missReactions[Math.floor(Math.random() * missReactions.length)];
+                        commando.speaking = true;
+                        commando.speakTimer = 60;
+                    }
+                    fireworks.splice(i, 1);
+                }
+            }
+
+            // Limit particles to prevent performance issues
+            const maxParticles = 800;
+            if (particles.length > maxParticles) {
+                // Remove oldest particles first
+                particles.splice(0, particles.length - maxParticles);
+            }
+
+            // Update particles with optimized filtering and safety checks
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const particle = particles[i];
+                if (!particle) continue; // Skip if particle is undefined
+                
+                particle.update();
+                if (particle.isDead()) {
+                    particles.splice(i, 1);
+                }
+            }
+        }
+
+        function draw() {
+            if (!gameStarted) return;
+            
+            // Clear with fade effect
+            ctx.fillStyle = 'rgba(0, 4, 40, 0.08)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            drawStars();
+            drawGround();
+            if (cannon) cannon.draw();
+            if (commando) commando.draw();
+            if (ufo) ufo.draw();
+
+            fireworks.forEach(fw => fw && fw.draw());
+            particles.forEach(p => p && p.draw());
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function init() {
+            cannon = new Cannon();
+            ufo = new UFO();
+            commando = new Commando();
+            createStars();
+            gameLoop();
+        }
+
+        // Toggle controls visibility
+        function toggleControls() {
+            const instructions = document.getElementById('instructions');
+            const button = document.getElementById('controlsButton');
+            
+            if (instructions.classList.contains('show')) {
+                instructions.classList.remove('show');
+                button.textContent = '🎮 Controls';
+            } else {
+                instructions.classList.add('show');
+                button.textContent = '❌ Hide';
+            }
+        }
+
+        // Event listeners with error handling
+        window.addEventListener('load', function() {
+            try {
+                const startBtn = document.getElementById('startButton');
+                if (startBtn) {
+                    startBtn.addEventListener('click', startGame);
+                    console.log('Start button event listener added');
+                } else {
+                    console.error('Start button not found!');
+                }
+            } catch (error) {
+                console.error('Error adding start button listener:', error);
+            }
+            
+            try {
+                const controlsBtn = document.getElementById('controlsButton');
+                if (controlsBtn) {
+                    controlsBtn.addEventListener('click', toggleControls);
+                    console.log('Controls button event listener added');
+                } else {
+                    console.error('Controls button not found!');
+                }
+            } catch (error) {
+                console.error('Error adding controls button listener:', error);
+            }
+        });
+        
+        window.addEventListener('keydown', handleKeyPress);
+        window.addEventListener('mousemove', (e) => { mouseX = e.clientX; });
+        
+        // Add mouse click support for firing
+        window.addEventListener('click', handleMouseClick);
+        
+        // Add touch support for mobile devices
+        window.addEventListener('touchstart', handleTouch);
+        window.addEventListener('touchend', handleTouch);
+        
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            if (cannon) cannon.x = canvas.width / 2;
+            createStars();
+        });
+
+        // Start the initialization
+        console.log('Initializing game...');
+        init();
+    </script>
+</body>
+</html>
