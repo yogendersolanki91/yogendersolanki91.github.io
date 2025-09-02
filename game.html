@@ -121,6 +121,29 @@
             box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
         }
 
+        #fullscreenButton {
+            position: fixed;
+            top: 20px;
+            right: 180px; /* Position to the left of controls button */
+            padding: 12px 20px;
+            background: linear-gradient(45deg, #11998e, #38ef7d);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(17, 153, 142, 0.3);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        #fullscreenButton:hover {
+            background: linear-gradient(45deg, #38ef7d, #11998e);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(17, 153, 142, 0.4);
+        }
+
         #instructions {
             position: fixed;
             top: 70px;
@@ -161,6 +184,73 @@
             to { text-shadow: 0 0 30px #00ff88, 0 0 40px #00ff88; }
         }
         
+        /* Responsive Design for Mobile and Tablet */
+        @media (max-width: 768px) {
+            #ui {
+                font-size: 14px !important;
+                top: 10px !important;
+                left: 10px !important;
+                padding: 12px !important;
+            }
+            
+            #controlsButton {
+                top: 10px !important;
+                right: 10px !important;
+                font-size: 12px !important;
+                padding: 8px 12px !important;
+            }
+            
+            #fullscreenButton {
+                top: 10px !important;
+                right: 120px !important;
+                font-size: 12px !important;
+                padding: 8px 12px !important;
+            }
+            
+            #instructions {
+                top: 60px !important;
+                right: 10px !important;
+                font-size: 12px !important;
+                padding: 12px !important;
+                max-width: 250px !important;
+            }
+            
+            #startScreen h1 {
+                font-size: 2.5rem !important;
+            }
+            
+            #startScreen p {
+                font-size: 1rem !important;
+            }
+            
+            #startButton {
+                font-size: 16px !important;
+                padding: 12px 24px !important;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            #ui {
+                font-size: 12px !important;
+                padding: 8px !important;
+            }
+            
+            #controlsButton, #fullscreenButton {
+                font-size: 11px !important;
+                padding: 6px 10px !important;
+            }
+            
+            #instructions {
+                font-size: 11px !important;
+                padding: 10px !important;
+                max-width: 200px !important;
+            }
+            
+            #startScreen h1 {
+                font-size: 2rem !important;
+            }
+        }
+        
         .hidden {
             display: none !important;
         }
@@ -194,6 +284,7 @@
     </div>
     
     <button id="controlsButton" class="hidden">🎮 Controls</button>
+    <button id="fullscreenButton" class="hidden">🖥️ Fullscreen</button>
     
     <div id="instructions">
         <p><strong>🎮 Controls:</strong></p>
@@ -201,6 +292,7 @@
         <p>• Press any key OR click/tap anywhere to fire!</p>
         <p>• Different keys = different colors!</p>
         <p>• Mouse/touch = random colors!</p>
+        <p>• Click 🖥️ button for fullscreen!</p>
         <p>🎯 UFO will dodge your fireworks!</p>
     </div>
     <canvas id="gameCanvas" class="hidden"></canvas>
@@ -241,6 +333,9 @@
             try {
                 gameStarted = true;
                 
+                // Reorganize UI for current screen size
+                reorganizeUI();
+                
                 // Hide start screen
                 const startScreen = document.getElementById('startScreen');
                 if (startScreen) {
@@ -266,6 +361,15 @@
                     console.log('Controls button shown');
                 } else {
                     console.error('Controls button element not found');
+                }
+                
+                // Show fullscreen button
+                const fullscreenButton = document.getElementById('fullscreenButton');
+                if (fullscreenButton) {
+                    fullscreenButton.classList.remove('hidden');
+                    console.log('Fullscreen button shown');
+                } else {
+                    console.error('Fullscreen button element not found');
                 }
                 
                 // Show copyright notice in lower right corner
@@ -623,10 +727,10 @@
 
         class Commando {
             constructor() {
-                this.x = canvas.width / 2 - 120; // Position near cannon, adjusted for larger size
-                this.y = canvas.height - 80; // Adjusted for larger size
-                this.width = 60; // Increased from 40 to 60 (1.5x)
-                this.height = 75; // Increased from 50 to 75 (1.5x)
+                this.x = canvas.width / 2 - 200; // Position to the left of cannon, more centered
+                this.y = canvas.height - 110; // Higher position to be clearly visible
+                this.width = 90; // Increased by 50%: 60 * 1.5 = 90
+                this.height = 112; // Increased by 50%: 75 * 1.5 = 112
                 this.animFrame = 0;
                 this.speaking = false;
                 this.speakTimer = 0;
@@ -668,8 +772,8 @@
                 
                 // Speech bubble (scaled for larger character)
                 if (this.speaking) {
-                    const bubbleX = this.x + 30; // Adjusted for larger size
-                    const bubbleY = this.y - 50; // Adjusted for larger size
+                    const bubbleX = this.x + 45; // Adjusted for 50% larger size
+                    const bubbleY = this.y - 60; // Positioned above character
                     const bubbleWidth = this.speechBubble.length * 9 + 25; // Slightly larger
                     const bubbleHeight = 30; // Increased size
                     
@@ -781,12 +885,12 @@
         class Cannon {
             constructor() {
                 this.x = canvas.width / 2;
-                this.y = canvas.height - 40; // Moved up slightly
+                this.y = canvas.height - 70; // Higher position to be clearly visible
                 this.angle = -Math.PI / 2;
-                this.barrelLength = 80; // Increased from 50
-                this.baseRadius = 45; // Increased from 30
+                this.barrelLength = 120; // Increased by 50%: 80 * 1.5 = 120
+                this.baseRadius = 67; // Increased by 50%: 45 * 1.5 = 67
                 this.recoil = 0;
-                this.barrelWidth = 18; // Increased barrel thickness
+                this.barrelWidth = 27; // Increased by 50%: 18 * 1.5 = 27
             }
 
             update(targetX) {
@@ -1895,10 +1999,14 @@
                 window.grassTexture = createGrassTexture();
             }
             
-            // Tile the grass texture across the ground
+            // Draw only the lower portion of grass to let characters show through
             const pattern = ctx.createPattern(window.grassTexture, 'repeat');
             ctx.fillStyle = pattern;
-            ctx.fillRect(0, groundY, canvas.width, groundHeight);
+            
+            // Draw grass only in bottom 60% to leave characters visible
+            const visibleGrassHeight = groundHeight * 0.6;
+            const visibleGrassY = canvas.height - visibleGrassHeight;
+            ctx.fillRect(0, visibleGrassY, canvas.width, visibleGrassHeight);
             
             // Add depth with darker base
             ctx.fillStyle = 'rgba(26, 77, 46, 0.7)';
@@ -2148,7 +2256,127 @@
         }
 
         function handleKeyPress(e) {
+            // Prevent modifier keys from triggering weapons
+            if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) {
+                return; // Don't fire weapon with modifier keys
+            }
+            
+            // Prevent specific system keys
+            const systemKeys = [
+                'Meta', 'Control', 'Alt', 'Shift', 'CapsLock', 'Tab', 
+                'Escape', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11', 'F12',
+                'PrintScreen', 'ScrollLock', 'Pause', 'Insert', 'Home', 'PageUp', 'PageDown', 'End',
+                'ContextMenu', 'OS', 'Super'
+            ];
+            
+            if (systemKeys.includes(e.key)) {
+                return; // Don't fire weapon with system keys
+            }
+            
+            // Fire weapon for ALL keys including space - no special fullscreen handling
             fireWeapon(e.key.toLowerCase());
+        }
+        
+        // Fullscreen functionality
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                // Enter fullscreen
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen();
+                } else if (document.documentElement.webkitRequestFullscreen) {
+                    document.documentElement.webkitRequestFullscreen(); // Safari
+                } else if (document.documentElement.msRequestFullscreen) {
+                    document.documentElement.msRequestFullscreen(); // IE/Edge
+                }
+            } else {
+                // Exit fullscreen
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen(); // Safari
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen(); // IE/Edge
+                }
+            }
+        }
+        
+        // Update fullscreen button text based on current state
+        function updateFullscreenButton() {
+            const button = document.getElementById('fullscreenButton');
+            if (button) {
+                if (document.fullscreenElement) {
+                    button.textContent = '🪟 Exit Fullscreen';
+                } else {
+                    button.textContent = '🖥️ Fullscreen';
+                }
+            }
+        }
+        
+        // Reorganize UI elements for different screen sizes
+        function reorganizeUI() {
+            const controlsButton = document.getElementById('controlsButton');
+            const fullscreenButton = document.getElementById('fullscreenButton');
+            const instructions = document.getElementById('instructions');
+            const ui = document.getElementById('ui');
+            
+            // Adjust button positions for smaller screens
+            if (window.innerWidth < 768) { // Mobile/tablet breakpoint
+                if (controlsButton) {
+                    controlsButton.style.top = '10px';
+                    controlsButton.style.right = '10px';
+                    controlsButton.style.fontSize = '12px';
+                    controlsButton.style.padding = '8px 12px';
+                }
+                
+                if (fullscreenButton) {
+                    fullscreenButton.style.top = '10px';
+                    fullscreenButton.style.right = '120px';
+                    fullscreenButton.style.fontSize = '12px';
+                    fullscreenButton.style.padding = '8px 12px';
+                }
+                
+                if (instructions) {
+                    instructions.style.top = '60px';
+                    instructions.style.right = '10px';
+                    instructions.style.fontSize = '12px';
+                    instructions.style.padding = '12px';
+                    instructions.style.maxWidth = '250px';
+                }
+                
+                if (ui) {
+                    ui.style.fontSize = '14px';
+                    ui.style.top = '10px';
+                    ui.style.left = '10px';
+                }
+            } else { // Desktop
+                if (controlsButton) {
+                    controlsButton.style.top = '20px';
+                    controlsButton.style.right = '20px';
+                    controlsButton.style.fontSize = '14px';
+                    controlsButton.style.padding = '12px 20px';
+                }
+                
+                if (fullscreenButton) {
+                    fullscreenButton.style.top = '20px';
+                    fullscreenButton.style.right = '180px';
+                    fullscreenButton.style.fontSize = '14px';
+                    fullscreenButton.style.padding = '12px 20px';
+                }
+                
+                if (instructions) {
+                    instructions.style.top = '70px';
+                    instructions.style.right = '20px';
+                    instructions.style.fontSize = '14px';
+                    instructions.style.padding = '20px';
+                    instructions.style.maxWidth = '300px';
+                }
+                
+                if (ui) {
+                    ui.style.fontSize = '16px';
+                    ui.style.top = '20px';
+                    ui.style.left = '20px';
+                }
+            }
         }
 
         // Handle mouse clicks on the game canvas
@@ -2156,7 +2384,7 @@
             if (!gameStarted) return;
             
             // Prevent firing if clicking on UI elements
-            if (e.target.id === 'controlsButton' || e.target.closest('#ui') || e.target.closest('#instructions')) {
+            if (e.target.id === 'controlsButton' || e.target.id === 'fullscreenButton' || e.target.closest('#ui') || e.target.closest('#instructions')) {
                 return;
             }
             
@@ -2171,7 +2399,7 @@
             e.preventDefault();
             
             // Prevent firing if touching UI elements
-            if (e.target.id === 'controlsButton' || e.target.closest('#ui') || e.target.closest('#instructions')) {
+            if (e.target.id === 'controlsButton' || e.target.id === 'fullscreenButton' || e.target.closest('#ui') || e.target.closest('#instructions')) {
                 return;
             }
             
@@ -2306,10 +2534,17 @@
             ctx.fillStyle = 'rgba(0, 4, 40, 0.08)';
             ctx.fillRect(-screenShake.x, -screenShake.y, canvas.width, canvas.height);
 
+            // Draw stars first (background)
             drawStars();
-            drawGround();
+            
+            // Draw cannon and commando 
             if (cannon) cannon.draw();
             if (commando) commando.draw();
+            
+            // Draw ground after characters but make sure it doesn't cover too much
+            drawGround();
+            
+            // Draw UFO and effects on top
             if (ufo) ufo.draw();
 
             fireworks.forEach(fw => fw && fw.draw());
@@ -2379,6 +2614,18 @@
             } catch (error) {
                 console.error('Error adding controls button listener:', error);
             }
+            
+            try {
+                const fullscreenBtn = document.getElementById('fullscreenButton');
+                if (fullscreenBtn) {
+                    fullscreenBtn.addEventListener('click', toggleFullscreen);
+                    console.log('Fullscreen button event listener added');
+                } else {
+                    console.error('Fullscreen button not found!');
+                }
+            } catch (error) {
+                console.error('Error adding fullscreen button listener:', error);
+            }
         });
         
         window.addEventListener('keydown', handleKeyPress);
@@ -2391,11 +2638,63 @@
         window.addEventListener('touchstart', handleTouch);
         window.addEventListener('touchend', handleTouch);
         
+        // Listen for fullscreen changes
+        document.addEventListener('fullscreenchange', updateFullscreenButton);
+        document.addEventListener('webkitfullscreenchange', updateFullscreenButton); // Safari
+        document.addEventListener('msfullscreenchange', updateFullscreenButton); // IE/Edge
+        
         window.addEventListener('resize', () => {
+            // Update canvas size
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            if (cannon) cannon.x = canvas.width / 2;
+            
+            // Reorganize UI elements
+            reorganizeUI();
+            
+            // Reorganize game objects based on new dimensions
+            if (cannon) {
+                cannon.x = canvas.width / 2;
+                cannon.y = canvas.height - 70; // Higher position to be visible
+            }
+            
+            if (commando) {
+                commando.x = canvas.width / 2 - 200; // Keep commando to the left of cannon
+                commando.y = canvas.height - 110; // Higher position to be visible
+            }
+            
+            // Recreate stars for new canvas size
             createStars();
+            
+            // Clear grass texture cache to regenerate for new size
+            if (window.grassTexture) {
+                window.grassTexture = null;
+            }
+            
+            // Reposition UFO if it exists and keep it within bounds
+            if (ufo) {
+                // Keep UFO within safe bounds
+                const margin = 80;
+                ufo.x = Math.max(margin, Math.min(canvas.width - margin, ufo.x));
+                ufo.y = Math.max(margin, Math.min(canvas.height * 0.5, ufo.y));
+                ufo.baseY = ufo.y;
+            }
+            
+            // Update particles to stay within new bounds
+            particles.forEach(particle => {
+                if (particle.x > canvas.width) particle.x = canvas.width - 10;
+                if (particle.y > canvas.height) particle.y = canvas.height - 10;
+            });
+            
+            // Update fireworks trajectories
+            fireworks.forEach(firework => {
+                if (firework.x > canvas.width) firework.x = canvas.width - 10;
+                if (firework.y > canvas.height) firework.y = canvas.height - 10;
+            });
+            
+            // Update mouse position to prevent off-screen aiming
+            mouseX = Math.max(0, Math.min(canvas.width, mouseX));
+            
+            console.log(`Window resized to: ${canvas.width}x${canvas.height}`);
         });
 
         // Start the initialization
