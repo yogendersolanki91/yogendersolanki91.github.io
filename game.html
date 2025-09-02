@@ -291,8 +291,8 @@
                 // Commando gives game start greeting in Hindi
                 if (commando) {
                     const startGreetings = [
-                        "चलो शुरू करते हैं!", "तैयार हो जा भाई!", "गेम टाइम!",
-                        "मार देंगे सालों को!", "लेट्स गो!", "धिशूम टाइम!"
+                        "Chalo shuru karte hain!", "Taiyaar ho ja bhai!", "Game time!",
+                        "Maar denge saalo ko!", "Let's go!", "Dhishoom time!"
                     ];
                     commando.speechBubble = startGreetings[Math.floor(Math.random() * startGreetings.length)];
                     commando.speaking = true;
@@ -497,6 +497,42 @@
             
             return colors;
         }
+        
+        // Screen shake effect
+        function createScreenShake(intensity, duration) {
+            screenShake.intensity = intensity;
+            screenShake.duration = duration;
+        }
+        
+        // Flash effect for dramatic moments
+        function createFlashEffect(intensity, duration, color = '#ffffff') {
+            flashEffect.intensity = intensity;
+            flashEffect.duration = duration;
+            flashEffect.color = color;
+        }
+        
+        // Update screen effects
+        function updateScreenEffects() {
+            // Update screen shake
+            if (screenShake.duration > 0) {
+                const progress = screenShake.duration / 30; // Assuming 30 frames duration
+                screenShake.x = (Math.random() - 0.5) * screenShake.intensity * progress;
+                screenShake.y = (Math.random() - 0.5) * screenShake.intensity * progress;
+                screenShake.duration--;
+            } else {
+                screenShake.x = 0;
+                screenShake.y = 0;
+                screenShake.intensity = 0;
+            }
+            
+            // Update flash effect
+            if (flashEffect.duration > 0) {
+                flashEffect.duration--;
+                flashEffect.intensity *= 0.92; // Fade out
+            } else {
+                flashEffect.intensity = 0;
+            }
+        }
 
         // Game objects
         let cannon, ufo, commando;
@@ -505,6 +541,10 @@
         let stars = [];
         let grassPatches = [];
         let mouseX = canvas.width / 2;
+        
+        // Screen shake variables
+        let screenShake = { x: 0, y: 0, intensity: 0, duration: 0 };
+        let flashEffect = { intensity: 0, duration: 0, color: '#ffffff' };
 
         // Create realistic grass texture
         function createGrassTexture() {
@@ -894,8 +934,8 @@
                 // Make commando react with Hindi dialogues when UFO is hit
                 if (commando && Math.random() < 0.6) { // 60% chance to react
                     const hitReactions = [
-                        "Arrey yaar! Laga!", "Kya baat hai!", "Dhoom dhadaka!", "Full bindaas!",
-                        "Ekdum jhakaas!", "Solid hit yaar!", "Kamaal kar diya!", "Balle balle! Hit!"
+                        "Laga na!", "Sahi pakda!", "Uda diya!", "Dhishoom!",
+                        "Bahut hard!", "Waah bhai!", "Laga diya na!", "Boom shakalaka!"
                     ];
                     commando.speechBubble = hitReactions[Math.floor(Math.random() * hitReactions.length)];
                     commando.speaking = true;
@@ -1662,6 +1702,7 @@
             }
 
             hitTarget() {
+                if (!this.target || this.target.health <= 0) return false;
                 const dx = this.x - this.target.x;
                 const dy = this.y - this.target.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
@@ -1790,6 +1831,19 @@
                 star.twinkle += star.speed;
                 star.sparklePhase += 0.05;
                 
+                // Handle blast flicker effect
+                if (star.blastAffected && star.flickerDuration > 0) {
+                    star.flickerDuration--;
+                    // Create dramatic flickering effect
+                    const flickerValue = Math.sin(star.flickerDuration * 0.5) * star.flickerIntensity;
+                    star.brightness = star.originalBrightness + flickerValue;
+                    
+                    if (star.flickerDuration <= 0) {
+                        star.blastAffected = false;
+                        star.brightness = star.originalBrightness;
+                    }
+                }
+                
                 // Enhanced twinkling with multiple effects
                 const baseBrightness = star.brightness * (Math.sin(star.twinkle * star.twinkleSpeed) + 1) / 2;
                 const sparkle = 0.2 + 0.8 * (Math.sin(star.sparklePhase * 3) + 1) / 2;
@@ -1911,12 +1965,82 @@
         }
 
         function createUFODeathExplosion(x, y) {
+            // Create massive screen shake for UFO destruction
+            createScreenShake(25, 45); // Intense shake for 45 frames
+            
+            // Create dramatic flash effect
+            createFlashEffect(0.6, 30, '#ff8800'); // Orange flash
+            
+            // Make stars flicker from the blast wave
+            stars.forEach(star => {
+                const distance = Math.sqrt((star.x - x) * (star.x - x) + (star.y - y) * (star.y - y));
+                if (distance < 300) {
+                    star.blastAffected = true;
+                    star.originalBrightness = star.brightness;
+                    star.flickerDuration = 60 - (distance / 5); // Closer stars flicker longer
+                    star.flickerIntensity = Math.max(0.1, 1 - distance / 300);
+                }
+            });
+            
+            // Add ground debris effect
+            for (let i = 0; i < 20; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const distance = 50 + Math.random() * 150;
+                const debrisX = x + Math.cos(angle) * distance;
+                const debrisY = canvas.height - 80 + Math.random() * 40; // Near ground level
+                
+                particles.push({
+                    x: debrisX,
+                    y: debrisY,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: -Math.random() * 12 - 5,
+                    life: 1.5,
+                    decay: 0.01,
+                    color: ['#8B4513', '#654321', '#A0522D', '#D2691E'][Math.floor(Math.random() * 4)],
+                    size: 2 + Math.random() * 4,
+                    gravity: 0.4,
+                    bounce: 0.3,
+                    groundLevel: canvas.height - 100,
+                    update() {
+                        this.x += this.vx;
+                        this.y += this.vy;
+                        this.vy += this.gravity;
+                        
+                        // Bounce off ground
+                        if (this.y >= this.groundLevel) {
+                            this.y = this.groundLevel;
+                            this.vy *= -this.bounce;
+                            this.vx *= 0.8; // Friction
+                            if (Math.abs(this.vy) < 1) this.vy = 0;
+                        }
+                        
+                        this.life -= this.decay;
+                    },
+                    draw() {
+                        ctx.globalAlpha = this.life;
+                        ctx.fillStyle = this.color;
+                        ctx.beginPath();
+                        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.globalAlpha = 1;
+                    },
+                    isDead() {
+                        return this.life <= 0;
+                    }
+                });
+            }
+            
             // Optimized massive explosion when UFO is destroyed
             // Reduced particle count to prevent performance issues
             for (let ring = 0; ring < 2; ring++) { // Reduced from 3 to 2 rings
                 setTimeout(() => {
                     // Multiple colored particle bursts (reduced count)
                     const colors = ['#ff0000', '#ff8000', '#ffff00', '#ffffff', '#ff4080', '#8040ff'];
+                    
+                    // Additional screen shake for delayed explosions
+                    if (ring > 0) {
+                        createScreenShake(15, 25);
+                    }
                     
                     // Reduced particle count from 150 to 80 per ring
                     for (let i = 0; i < 80; i++) {
@@ -1955,12 +2079,18 @@
                 }, ring * 200); // Staggered explosions
             }
             
-            // Screen flash effect
+            // Enhanced screen flash effect with multiple pulses
             particles.push({
                 life: 1,
                 decay: 0.05,
+                pulseCount: 0,
+                maxPulses: 3,
                 update() {
                     this.life -= this.decay;
+                    if (this.life <= 0.7 && this.life > 0.5 && this.pulseCount < this.maxPulses) {
+                        createFlashEffect(0.3, 15, '#ffff00'); // Yellow secondary flash
+                        this.pulseCount++;
+                    }
                 },
                 draw() {
                     ctx.globalAlpha = this.life * 0.3;
@@ -1977,6 +2107,9 @@
         // Universal fire function that can be called from keyboard, mouse, or touch
         function fireWeapon(colorKey = null) {
             if (!gameStarted) return;
+            
+            // Don't fire if UFO is destroyed/null
+            if (!ufo) return;
             
             // Rate limiting to prevent bombardment issues
             const currentTime = Date.now();
@@ -2048,6 +2181,9 @@
         function update() {
             if (!gameStarted) return;
             
+            // Update screen effects first
+            updateScreenEffects();
+            
             // Safety checks to prevent undefined errors
             if (ufo) ufo.update(fireworks);
             if (cannon) cannon.update(mouseX);
@@ -2070,6 +2206,10 @@
 
                 if (fw.hitTarget() && ufo && ufo.health > 0) {
                     createExplosion(fw.x, fw.y, fw.color, fw.blastType);
+                    
+                    // Add small screen shake on UFO hit
+                    createScreenShake(5, 8);
+                    
                     ufo.takeDamage(10);
                     score += 100;
                     hits++;
@@ -2086,11 +2226,10 @@
                         // Commando celebrates with Hindi victory dialogues
                         if (commando) {
                             const victoryDialogues = [
-                                "चप्पा!", "का हुआ?",
-                                "खत्म तता बाय बाय!", "उड़ा दिया साले को!", "मौत का सौदागर!",
-                                "भाग जा बेवकूफ!", "गेम ओवर भाई!", "धिशूम धिशूम!",
-                                "जहाज़ वाले को हरा दिया!", "क्योंकि मैं हूँ हीरो!",
-                                "ठोको इसको! खत्म!", "बल्ले बल्ले! जीत गए!"
+                                "चप्पा..", "का हुआ...??", "बम बम भोले!",
+                                "खतम टाटा बाय बाय!", "उड़ा दिया साले को!", "मौत का सौदागर!",
+                                "गेम ओवर भाई!", "धिशूम धिशूम!", "क्यूंकि मैं हूँ हीरो!",
+                                "ठोको इसको! खतम!", "बल्ले बल्ले! जीत गए!"
                             ];
                             commando.speechBubble = victoryDialogues[Math.floor(Math.random() * victoryDialogues.length)];
                             commando.speaking = true;
@@ -2107,10 +2246,19 @@
                         // This prevents massive particle spam that causes performance issues
                         fireworks = []; // Clear all fireworks instantly
                         
-                        // Respawn UFO immediately with full health
-                        ufo = new UFO();
-                        ufoHealth = 100;
-                        ufoHealthElement.textContent = ufoHealth;
+                        // Mark UFO as destroyed and set respawn timer
+                        ufo = null; // Remove UFO completely
+                        ufoHealth = 0;
+                        ufoHealthElement.textContent = "DESTROYED";
+                        
+                        // Respawn UFO after 1 second delay
+                        setTimeout(() => {
+                            if (gameStarted) { // Only respawn if game is still running
+                                ufo = new UFO();
+                                ufoHealth = 100;
+                                ufoHealthElement.textContent = ufoHealth;
+                            }
+                        }, 1000); // 1 second delay
                     }
                 } else if (fw.isOffScreen()) {
                     // Commando reacts to misses with Hindi expressions (occasionally)
@@ -2118,7 +2266,7 @@
                         const missReactions = [
                             "अरे यार!", "मिस हो गया!", "क्या कर रहा है भाई!",
                             "फिर से ट्राई कर!", "एम करो यार!", "का हुआ?",
-                            "बेवकूफ बना रहा है!", "फोकस करो!"
+                            "फोकस करो!"
                         ];
                         commando.speechBubble = missReactions[Math.floor(Math.random() * missReactions.length)];
                         commando.speaking = true;
@@ -2150,9 +2298,13 @@
         function draw() {
             if (!gameStarted) return;
             
+            // Apply screen shake
+            ctx.save();
+            ctx.translate(screenShake.x, screenShake.y);
+            
             // Clear with fade effect
             ctx.fillStyle = 'rgba(0, 4, 40, 0.08)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillRect(-screenShake.x, -screenShake.y, canvas.width, canvas.height);
 
             drawStars();
             drawGround();
@@ -2162,6 +2314,16 @@
 
             fireworks.forEach(fw => fw && fw.draw());
             particles.forEach(p => p && p.draw());
+            
+            ctx.restore();
+            
+            // Apply flash effect on top of everything
+            if (flashEffect.intensity > 0) {
+                ctx.globalAlpha = flashEffect.intensity;
+                ctx.fillStyle = flashEffect.color;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.globalAlpha = 1;
+            }
         }
 
         function gameLoop() {
