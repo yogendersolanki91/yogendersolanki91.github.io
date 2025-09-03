@@ -426,136 +426,407 @@
         const killsElement = document.getElementById('kills');
         const ufoHealthElement = document.getElementById('ufoHealth');
 
-        // Audio context
+        // Audio context and sound buffers
         let audioCtx;
+        let soundBuffers = {}; // Store loaded audio buffers
+        let audioLoaded = false;
+        
+        // Sound file URLs - Using freesound.org and other sources for better compatibility
+        const soundFiles = {
+            // Alternative free sound sources - these are more likely to work
+            cannon_blast: 'https://freesound.org/data/previews/316/316847_5123451-lq.mp3',
+            missile_launch: 'https://freesound.org/data/previews/346/346120_5861837-lq.mp3',
+            
+            explosion_small: 'https://freesound.org/data/previews/316/316847_5123451-lq.mp3',
+            explosion_medium: 'https://freesound.org/data/previews/442/442127_8123451-lq.mp3',
+            explosion_large: 'https://freesound.org/data/previews/442/442115_8123451-lq.mp3',
+            explosion_massive: 'https://freesound.org/data/previews/442/442102_8123451-lq.mp3',
+            
+            metal_hit_1: 'https://freesound.org/data/previews/321/321104_5261964-lq.mp3',
+            metal_hit_2: 'https://freesound.org/data/previews/321/321102_5261964-lq.mp3',
+            metal_hit_3: 'https://freesound.org/data/previews/321/321103_5261964-lq.mp3',
+            
+            ufo_damage: 'https://freesound.org/data/previews/154/154934_2767645-lq.mp3',
+            ufo_destruction: 'https://freesound.org/data/previews/442/442115_8123451-lq.mp3'
+            
+            // Note: You can replace these URLs with your own hosted wave files for better reliability
+            // For production, consider hosting your own sound files to avoid CORS issues
+        };
+        
         function initAudio() {
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                loadSoundFiles();
             }
         }
-
-        function playFireSound() {
+        
+        // Load wave files asynchronously
+        async function loadSoundFiles() {
+            console.log('Loading high-quality audio files...');
+            const loadPromises = [];
+            
+            for (const [name, url] of Object.entries(soundFiles)) {
+                loadPromises.push(loadSingleSound(name, url));
+            }
+            
+            try {
+                await Promise.allSettled(loadPromises);
+                audioLoaded = true;
+                console.log('Audio files loaded successfully');
+            } catch (error) {
+                console.warn('Some audio files failed to load, using procedural audio as fallback');
+                audioLoaded = false;
+            }
+        }
+        
+        async function loadSingleSound(name, url) {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const arrayBuffer = await response.arrayBuffer();
+                const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                soundBuffers[name] = audioBuffer;
+                console.log(`Loaded: ${name}`);
+            } catch (error) {
+                console.warn(`Failed to load ${name}: ${error.message}`);
+                // Don't store anything, will fall back to procedural audio
+            }
+        }
+        
+        // Enhanced audio playback with wave file support
+        function playSound(soundName, volume = 1.0, playbackRate = 1.0, delayTime = 0) {
             if (!audioCtx) return;
             
-            // Enhanced launch sound with multiple layers
+            const buffer = soundBuffers[soundName];
+            if (buffer) {
+                // Play high-quality wave file
+                const source = audioCtx.createBufferSource();
+                const gainNode = audioCtx.createGain();
+                
+                source.buffer = buffer;
+                source.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                gainNode.gain.setValueAtTime(volume, audioCtx.currentTime + delayTime);
+                source.playbackRate.setValueAtTime(playbackRate, audioCtx.currentTime + delayTime);
+                
+                source.start(audioCtx.currentTime + delayTime);
+                return source;
+            }
+            return null; // Will fall back to procedural audio
+        }
+
+        function playFireSound(inputType = 'keyboard', key = null, touchPosition = null) {
+            if (!audioCtx) return;
             
-            // Main launch whoosh
+            // Try to play high-quality wave file first
+            if (audioLoaded) {
+                let playbackRate = 1.0;
+                let volume = 0.8;
+                
+                // Vary playback rate and volume based on input type
+                if (inputType === 'keyboard' && key) {
+                    const keyCode = key.charCodeAt(0);
+                    playbackRate = 0.8 + (keyCode % 50) * 0.008; // Range: 0.8-1.2
+                    volume = 0.6 + (keyCode % 30) * 0.013; // Range: 0.6-1.0
+                } else if (inputType === 'touch' && touchPosition) {
+                    const screenRatio = touchPosition.x / canvas.width;
+                    playbackRate = 0.7 + screenRatio * 0.6; // Range: 0.7-1.3
+                    volume = 0.5 + (touchPosition.y / canvas.height) * 0.5; // Range: 0.5-1.0
+                } else {
+                    playbackRate = 0.8 + Math.random() * 0.4; // Range: 0.8-1.2
+                    volume = 0.6 + Math.random() * 0.4; // Range: 0.6-1.0
+                }
+                
+                // Play cannon blast and missile launch with variations
+                const cannonSound = playSound('cannon_blast', volume * 1.2, playbackRate * 0.9);
+                const missileSound = playSound('missile_launch', volume * 0.8, playbackRate, 0.1);
+                
+                if (cannonSound || missileSound) {
+                    return; // Successfully played wave files
+                }
+            }
+            
+            // Fallback to procedural audio (your existing code)
+            let baseFreq, whistleFreq, blastFreq;
+            
+            if (inputType === 'keyboard' && key) {
+                const keyCode = key.charCodeAt(0);
+                baseFreq = 150 + (keyCode % 100) * 3;
+                whistleFreq = 700 + (keyCode % 50) * 10;
+                blastFreq = 60 + (keyCode % 30) * 2;
+            } else if (inputType === 'touch' && touchPosition) {
+                const screenRatio = touchPosition.x / canvas.width;
+                const heightRatio = touchPosition.y / canvas.height;
+                baseFreq = 120 + screenRatio * 200;
+                whistleFreq = 800 + heightRatio * 400;
+                blastFreq = 70 + screenRatio * 40;
+            } else {
+                baseFreq = 180 + Math.random() * 100;
+                whistleFreq = 850 + Math.random() * 300;
+                blastFreq = 75 + Math.random() * 25;
+            }
+            
+            // Classic cannon blast (enhanced)
+            const cannonBlast = audioCtx.createOscillator();
+            const cannonGain = audioCtx.createGain();
+            cannonBlast.connect(cannonGain);
+            cannonGain.connect(audioCtx.destination);
+            cannonBlast.type = 'square';
+            cannonBlast.frequency.setValueAtTime(blastFreq, audioCtx.currentTime);
+            cannonBlast.frequency.exponentialRampToValueAtTime(blastFreq * 0.5, audioCtx.currentTime + 0.2);
+            cannonGain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+            cannonGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.2);
+            cannonBlast.start(audioCtx.currentTime);
+            cannonBlast.stop(audioCtx.currentTime + 0.2);
+            
+            // Main launch whoosh with variation
             const mainOsc = audioCtx.createOscillator();
             const mainGain = audioCtx.createGain();
             mainOsc.connect(mainGain);
             mainGain.connect(audioCtx.destination);
             mainOsc.type = 'sawtooth';
-            mainOsc.frequency.setValueAtTime(200, audioCtx.currentTime);
-            mainOsc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.1);
-            mainOsc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.3);
-            mainGain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-            mainGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.3);
+            mainOsc.frequency.setValueAtTime(baseFreq, audioCtx.currentTime);
+            mainOsc.frequency.exponentialRampToValueAtTime(baseFreq * 3, audioCtx.currentTime + 0.08);
+            mainOsc.frequency.exponentialRampToValueAtTime(baseFreq * 0.7, audioCtx.currentTime + 0.35);
+            mainGain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+            mainGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.35);
             mainOsc.start(audioCtx.currentTime);
-            mainOsc.stop(audioCtx.currentTime + 0.3);
+            mainOsc.stop(audioCtx.currentTime + 0.35);
             
-            // Cannon blast
-            const blastOsc = audioCtx.createOscillator();
-            const blastGain = audioCtx.createGain();
-            blastOsc.connect(blastGain);
-            blastGain.connect(audioCtx.destination);
-            blastOsc.type = 'square';
-            blastOsc.frequency.setValueAtTime(80, audioCtx.currentTime);
-            blastGain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-            blastGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.15);
-            blastOsc.start(audioCtx.currentTime);
-            blastOsc.stop(audioCtx.currentTime + 0.15);
-            
-            // High-pitched whistle
+            // Projectile whistle with variation
             const whistleOsc = audioCtx.createOscillator();
             const whistleGain = audioCtx.createGain();
             whistleOsc.connect(whistleGain);
             whistleGain.connect(audioCtx.destination);
             whistleOsc.type = 'sine';
-            whistleOsc.frequency.setValueAtTime(800, audioCtx.currentTime + 0.05);
-            whistleOsc.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.4);
-            whistleGain.gain.setValueAtTime(0.08, audioCtx.currentTime + 0.05);
+            whistleOsc.frequency.setValueAtTime(whistleFreq, audioCtx.currentTime + 0.04);
+            whistleOsc.frequency.linearRampToValueAtTime(whistleFreq * 1.4, audioCtx.currentTime + 0.4);
+            whistleGain.gain.setValueAtTime(0.06, audioCtx.currentTime + 0.04);
             whistleGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.4);
-            whistleOsc.start(audioCtx.currentTime + 0.05);
+            whistleOsc.start(audioCtx.currentTime + 0.04);
             whistleOsc.stop(audioCtx.currentTime + 0.4);
+            
+            // Add crackling launch effect for certain keys/positions
+            if ((inputType === 'keyboard' && key && 'aeiou'.includes(key)) || 
+                (inputType === 'touch' && touchPosition && touchPosition.x > canvas.width * 0.7)) {
+                setTimeout(() => {
+                    const crackle = audioCtx.createBufferSource();
+                    const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.15, audioCtx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < data.length; i++) {
+                        data[i] = (Math.random() - 0.5) * 0.3 * Math.pow(1 - i / data.length, 2);
+                    }
+                    crackle.buffer = buffer;
+                    const crackleGain = audioCtx.createGain();
+                    crackle.connect(crackleGain);
+                    crackleGain.connect(audioCtx.destination);
+                    crackleGain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                    crackle.start(audioCtx.currentTime);
+                }, 20);
+            }
         }
 
-        function playExplosionSound() {
+        function playExplosionSound(explosionType = 0, intensity = 1.0) {
             if (!audioCtx) return;
-            // Bass thump
+            
+            // Try to play high-quality wave file first
+            if (audioLoaded) {
+                const explosionSounds = ['explosion_small', 'explosion_medium', 'explosion_large', 'explosion_massive'];
+                const soundName = explosionSounds[explosionType % explosionSounds.length];
+                
+                let playbackRate = 0.8 + intensity * 0.4; // Range: 0.8-1.2
+                let volume = Math.min(intensity * 0.8, 1.0);
+                
+                const explosionSound = playSound(soundName, volume, playbackRate);
+                if (explosionSound) {
+                    return; // Successfully played wave file
+                }
+            }
+            
+            // Fallback to procedural audio (your existing code)
+            const explosionVariations = [
+                { bassFreq: 80, midFreq: 300, crackleDuration: 0.4, reverbDelay: 0.1 },
+                { bassFreq: 50, midFreq: 200, crackleDuration: 0.6, reverbDelay: 0.15 },
+                { bassFreq: 120, midFreq: 500, crackleDuration: 0.3, reverbDelay: 0.05 },
+                { bassFreq: 40, midFreq: 150, crackleDuration: 0.8, reverbDelay: 0.2 }
+            ];
+            
+            const variation = explosionVariations[explosionType % explosionVariations.length];
+            
+            // Bass thump with variation
             const bass = audioCtx.createOscillator();
             const bassGain = audioCtx.createGain();
             bass.connect(bassGain);
             bassGain.connect(audioCtx.destination);
-            bass.frequency.setValueAtTime(80, audioCtx.currentTime);
-            bassGain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-            bassGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+            bass.type = 'square';
+            bass.frequency.setValueAtTime(variation.bassFreq * intensity, audioCtx.currentTime);
+            bass.frequency.exponentialRampToValueAtTime(variation.bassFreq * 0.3 * intensity, audioCtx.currentTime + 0.4);
+            bassGain.gain.setValueAtTime(0.3 * intensity, audioCtx.currentTime);
+            bassGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
             bass.start(audioCtx.currentTime);
-            bass.stop(audioCtx.currentTime + 0.3);
+            bass.stop(audioCtx.currentTime + 0.4);
 
-            // Crackling noise
+            // Mid-range explosion body
+            const mid = audioCtx.createOscillator();
+            const midGain = audioCtx.createGain();
+            mid.connect(midGain);
+            midGain.connect(audioCtx.destination);
+            mid.type = 'sawtooth';
+            mid.frequency.setValueAtTime(variation.midFreq * intensity, audioCtx.currentTime);
+            mid.frequency.exponentialRampToValueAtTime(variation.midFreq * 0.2 * intensity, audioCtx.currentTime + 0.25);
+            midGain.gain.setValueAtTime(0.2 * intensity, audioCtx.currentTime);
+            midGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+            mid.start(audioCtx.currentTime);
+            mid.stop(audioCtx.currentTime + 0.25);
+
+            // Crackling debris with variation
             setTimeout(() => {
                 const noise = audioCtx.createBufferSource();
-                const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.5, audioCtx.sampleRate);
+                const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * variation.crackleDuration, audioCtx.sampleRate);
                 const data = buffer.getChannelData(0);
                 for (let i = 0; i < data.length; i++) {
-                    data[i] = Math.random() * 2 - 1;
+                    const decay = Math.pow(1 - i / data.length, 1.5);
+                    const crackle = (Math.random() - 0.5) * 2;
+                    const rumble = Math.sin(i * 0.02) * 0.3;
+                    data[i] = (crackle * 0.7 + rumble * 0.3) * decay * intensity;
                 }
                 noise.buffer = buffer;
                 const noiseGain = audioCtx.createGain();
                 noise.connect(noiseGain);
                 noiseGain.connect(audioCtx.destination);
-                noiseGain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                noiseGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+                noiseGain.gain.setValueAtTime(0.12 * intensity, audioCtx.currentTime);
+                noiseGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + variation.crackleDuration);
                 noise.start(audioCtx.currentTime);
-            }, 100);
+            }, variation.reverbDelay * 1000);
+            
+            // Echo/reverb effect for larger explosions
+            if (intensity > 0.7) {
+                setTimeout(() => {
+                    const echo = audioCtx.createOscillator();
+                    const echoGain = audioCtx.createGain();
+                    echo.connect(echoGain);
+                    echoGain.connect(audioCtx.destination);
+                    echo.type = 'triangle';
+                    echo.frequency.setValueAtTime(variation.bassFreq * 0.5, audioCtx.currentTime);
+                    echo.frequency.exponentialRampToValueAtTime(variation.bassFreq * 0.1, audioCtx.currentTime + 0.6);
+                    echoGain.gain.setValueAtTime(0.08 * intensity, audioCtx.currentTime);
+                    echoGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
+                    echo.start(audioCtx.currentTime);
+                    echo.stop(audioCtx.currentTime + 0.6);
+                }, 150);
+            }
         }
 
-        function playUFOHitSound() {
+        function playUFOHitSound(hitLocation = { x: 0, y: 0 }, hitType = 'normal') {
             if (!audioCtx) return;
             
-            // Enhanced hit sound with impact and damage effects
+            // Try to play high-quality wave file first
+            if (audioLoaded) {
+                const hitSounds = ['metal_hit_1', 'metal_hit_2', 'metal_hit_3'];
+                const locationVariation = (hitLocation.x % 100) / 100;
+                const soundIndex = Math.floor(locationVariation * hitSounds.length);
+                const soundName = hitSounds[soundIndex];
+                
+                let playbackRate = 0.8 + locationVariation * 0.6; // Range: 0.8-1.4
+                let volume = hitType === 'critical' ? 1.0 : 0.7;
+                
+                const hitSound = playSound(soundName, volume, playbackRate);
+                
+                // Play additional damage sound for critical hits
+                if (hitType === 'critical' && audioLoaded) {
+                    playSound('ufo_damage', 0.8, 1.0, 0.1);
+                }
+                
+                if (hitSound) {
+                    return; // Successfully played wave file
+                }
+            }
             
-            // Main impact
+            // Fallback to procedural audio (your existing code)
+            const hitIntensity = hitType === 'critical' ? 1.5 : 1.0;
+            const locationVariation = (hitLocation.x % 100) / 100;
+            const heightVariation = (hitLocation.y % 100) / 100;
+            
+            let impactFreq, clangFreq, sparkIntensity;
+            
+            if (locationVariation < 0.3) {
+                impactFreq = 120 + locationVariation * 50;
+                clangFreq = 600 + heightVariation * 200;
+                sparkIntensity = 0.8;
+            } else if (locationVariation > 0.7) {
+                impactFreq = 180 + locationVariation * 80;
+                clangFreq = 900 + heightVariation * 300;
+                sparkIntensity = 1.0;
+            } else {
+                impactFreq = 150 + locationVariation * 60;
+                clangFreq = 750 + heightVariation * 250;
+                sparkIntensity = 0.9;
+            }
+            
+            // Main impact with location-based variation
             const impact = audioCtx.createOscillator();
             const impactGain = audioCtx.createGain();
             impact.connect(impactGain);
             impactGain.connect(audioCtx.destination);
             impact.type = 'square';
-            impact.frequency.setValueAtTime(150, audioCtx.currentTime);
-            impact.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.3);
-            impactGain.gain.setValueAtTime(0.25, audioCtx.currentTime);
-            impactGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.3);
+            impact.frequency.setValueAtTime(impactFreq * hitIntensity, audioCtx.currentTime);
+            impact.frequency.exponentialRampToValueAtTime(impactFreq * 0.4 * hitIntensity, audioCtx.currentTime + 0.35);
+            impactGain.gain.setValueAtTime(0.28 * hitIntensity, audioCtx.currentTime);
+            impactGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.35);
             impact.start(audioCtx.currentTime);
-            impact.stop(audioCtx.currentTime + 0.3);
+            impact.stop(audioCtx.currentTime + 0.35);
             
-            // Metal clang
+            // Metal clang with directional variation
             const clang = audioCtx.createOscillator();
             const clangGain = audioCtx.createGain();
             clang.connect(clangGain);
             clangGain.connect(audioCtx.destination);
             clang.type = 'triangle';
-            clang.frequency.setValueAtTime(800, audioCtx.currentTime);
-            clang.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.4);
-            clangGain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-            clangGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.4);
-            clang.start(audioCtx.currentTime);
-            clang.stop(audioCtx.currentTime + 0.4);
+            clang.frequency.setValueAtTime(clangFreq * hitIntensity, audioCtx.currentTime + 0.02);
+            clang.frequency.exponentialRampToValueAtTime(clangFreq * 0.3 * hitIntensity, audioCtx.currentTime + 0.45);
+            clangGain.gain.setValueAtTime(0.18 * hitIntensity, audioCtx.currentTime + 0.02);
+            clangGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.45);
+            clang.start(audioCtx.currentTime + 0.02);
+            clang.stop(audioCtx.currentTime + 0.45);
             
-            // Electrical damage sound
+            // Hull stress/creaking sound for critical hits
+            if (hitType === 'critical') {
+                const stress = audioCtx.createOscillator();
+                const stressGain = audioCtx.createGain();
+                stress.connect(stressGain);
+                stressGain.connect(audioCtx.destination);
+                stress.type = 'sawtooth';
+                stress.frequency.setValueAtTime(80, audioCtx.currentTime + 0.1);
+                stress.frequency.linearRampToValueAtTime(120, audioCtx.currentTime + 0.3);
+                stress.frequency.linearRampToValueAtTime(60, audioCtx.currentTime + 0.6);
+                stressGain.gain.setValueAtTime(0.15, audioCtx.currentTime + 0.1);
+                stressGain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.6);
+                stress.start(audioCtx.currentTime + 0.1);
+                stress.stop(audioCtx.currentTime + 0.6);
+            }
+            
+            // Electrical damage sparks with location-based intensity
             setTimeout(() => {
                 const spark = audioCtx.createBufferSource();
-                const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.2, audioCtx.sampleRate);
+                const sparkDuration = 0.15 + sparkIntensity * 0.1;
+                const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * sparkDuration, audioCtx.sampleRate);
                 const data = buffer.getChannelData(0);
                 for (let i = 0; i < data.length; i++) {
-                    data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.1));
+                    const progress = i / data.length;
+                    const decay = Math.pow(1 - progress, 1.2);
+                    const spark1 = (Math.random() - 0.5) * 2;
+                    const spark2 = Math.sin(i * 0.1 * sparkIntensity) * 0.3;
+                    data[i] = (spark1 * 0.8 + spark2 * 0.2) * decay * sparkIntensity * hitIntensity;
                 }
                 spark.buffer = buffer;
                 const sparkGain = audioCtx.createGain();
                 spark.connect(sparkGain);
                 sparkGain.connect(audioCtx.destination);
-                sparkGain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                sparkGain.gain.setValueAtTime(0.12 * sparkIntensity * hitIntensity, audioCtx.currentTime);
                 spark.start(audioCtx.currentTime);
-            }, 50);
+            }, 40);
         }
 
         const keyColors = {
@@ -2013,66 +2284,151 @@
             ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
         }
 
-        function createExplosion(x, y, color, blastType = 0) {
-            // Performance-optimized explosion with reduced particle counts
-            switch(blastType) {
-                case 0: // Standard explosion (reduced from 80 to 50)
-                    for (let i = 0; i < 50; i++) {
-                        particles.push(new Particle(x, y, color));
+        function createUFODebris(x, y, hitIntensity = 1.0) {
+            // Create realistic UFO debris falling effect
+            const debrisCount = Math.floor(4 + hitIntensity * 8); // Reduced: 4-12 debris pieces
+            
+            for (let i = 0; i < debrisCount; i++) {
+                // Create different types of debris
+                const debrisType = Math.random();
+                let debris;
+                
+                if (debrisType < 0.4) {
+                    // Metal fragments - faster, more subtle
+                    debris = {
+                        x: x + (Math.random() - 0.5) * 25, // Reduced spread
+                        y: y + (Math.random() - 0.5) * 15,
+                        vx: (Math.random() - 0.5) * 4 * hitIntensity, // Reduced horizontal velocity
+                        vy: Math.random() * 2 + 3, // Faster downward velocity
+                        width: 1 + Math.random() * 2, // Smaller size
+                        height: 1 + Math.random() * 2,
+                        rotation: Math.random() * Math.PI * 2,
+                        rotationSpeed: (Math.random() - 0.5) * 0.15, // Slower rotation
+                        color: ['#909090', '#808080', '#707070', '#a0a0a0'][Math.floor(Math.random() * 4)], // More subtle colors
+                        life: 0.8 + Math.random() * 0.6, // Shorter life
+                        decay: 0.015, // Faster decay
+                        gravity: 0.25, // Increased gravity
+                        bounce: 0.2, // Less bouncy
+                        type: 'metal'
+                    };
+                } else if (debrisType < 0.7) {
+                    // Sparks and electrical components - faster, more subtle
+                    debris = {
+                        x: x + (Math.random() - 0.5) * 20, // Reduced spread
+                        y: y + (Math.random() - 0.5) * 10,
+                        vx: (Math.random() - 0.5) * 6 * hitIntensity, // Reduced horizontal velocity
+                        vy: Math.random() * 3 + 2, // Faster downward velocity
+                        size: 0.5 + Math.random() * 1, // Smaller sparks
+                        color: ['#ffcc00', '#ff6600', '#ff3300', '#00ccff', '#6666ff'][Math.floor(Math.random() * 5)], // More subtle colors
+                        life: 0.4 + Math.random() * 0.4, // Much shorter life
+                        decay: 0.025, // Faster decay
+                        gravity: 0.15, // Increased gravity
+                        sparkle: true,
+                        sparklePhase: Math.random() * Math.PI * 2,
+                        type: 'spark'
+                    };
+                } else {
+                    // UFO hull pieces - faster, more subtle
+                    debris = {
+                        x: x + (Math.random() - 0.5) * 20, // Reduced spread
+                        y: y + (Math.random() - 0.5) * 15,
+                        vx: (Math.random() - 0.5) * 3 * hitIntensity, // Reduced horizontal velocity
+                        vy: Math.random() * 2 + 2, // Faster downward velocity
+                        width: 2 + Math.random() * 3, // Smaller size
+                        height: 2 + Math.random() * 3,
+                        rotation: Math.random() * Math.PI * 2,
+                        rotationSpeed: (Math.random() - 0.5) * 0.1, // Slower rotation
+                        color: ['#b0b0b0', '#909090', '#c0c0c0', '#7080aa'][Math.floor(Math.random() * 4)], // More subtle colors
+                        life: 1.0 + Math.random() * 0.8, // Shorter life
+                        decay: 0.012, // Faster decay
+                        gravity: 0.2, // Increased gravity
+                        bounce: 0.15, // Less bouncy
+                        type: 'hull'
+                    };
+                }
+                
+                // Common update function for all debris types
+                debris.update = function() {
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    this.vy += this.gravity;
+                    this.vx *= 0.995; // Air resistance
+                    this.life -= this.decay;
+                    
+                    if (this.rotation !== undefined) {
+                        this.rotation += this.rotationSpeed;
                     }
-                    break;
-                case 1: // Ring explosion (reduced from 60 to 40)
-                    for (let i = 0; i < 40; i++) {
-                        const angle = (i / 40) * Math.PI * 2;
-                        const speed = 8 + Math.random() * 6;
-                        particles.push(new RingParticle(x, y, color, angle, speed));
+                    
+                    if (this.sparklePhase !== undefined) {
+                        this.sparklePhase += 0.2;
                     }
-                    break;
-                case 2: // Star burst (reduced density)
-                    for (let star = 0; star < 6; star++) { // Reduced from 8 to 6 stars
-                        const starAngle = (star / 6) * Math.PI * 2;
-                        for (let i = 0; i < 8; i++) { // Reduced from 10 to 8 particles per star
-                            particles.push(new StarParticle(x, y, color, starAngle));
+                    
+                    // Bounce off ground
+                    if (this.y > canvas.height - 50 && this.vy > 0) {
+                        this.y = canvas.height - 50;
+                        this.vy *= -(this.bounce || 0.1);
+                        this.vx *= 0.8; // Friction
+                        if (Math.abs(this.vy) < 1) {
+                            this.vy = 0; // Stop micro-bouncing
+                            this.gravity = 0;
                         }
                     }
-                    break;
-                case 3: // Spiral explosion (reduced from 100 to 60)
-                    for (let i = 0; i < 60; i++) {
-                        particles.push(new SpiralParticle(x, y, color, i));
+                };
+                
+                // Common draw function for all debris types
+                debris.draw = function() {
+                    ctx.save();
+                    ctx.globalAlpha = this.life * 0.6; // More subtle opacity
+                    
+                    if (this.type === 'metal' || this.type === 'hull') {
+                        // Draw rectangular debris with rotation
+                        ctx.translate(this.x, this.y);
+                        ctx.rotate(this.rotation);
+                        ctx.fillStyle = this.color;
+                        ctx.fillRect(-this.width/2, -this.height/2, this.width, this.height);
+                        
+                        // Add subtle metallic highlight
+                        ctx.globalAlpha = this.life * 0.3; // More subtle highlight
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(-this.width/2, -this.height/2, this.width/4, this.height/4);
+                    } else if (this.type === 'spark') {
+                        // Draw sparkling particles
+                        ctx.translate(this.x, this.y);
+                        const sparkleIntensity = 0.3 + 0.3 * Math.sin(this.sparklePhase); // Reduced sparkle intensity
+                        ctx.globalAlpha = this.life * sparkleIntensity * 0.7; // More subtle sparks
+                        ctx.fillStyle = this.color;
+                        
+                        // Draw smaller cross-shaped spark
+                        ctx.fillRect(-this.size * 0.8, -this.size/6, this.size * 1.6, this.size/3);
+                        ctx.fillRect(-this.size/6, -this.size * 0.8, this.size/3, this.size * 1.6);
                     }
-                    break;
+                    
+                    ctx.restore();
+                };
+                
+                debris.isDead = function() {
+                    return this.life <= 0 || this.y > canvas.height + 50;
+                };
+                
+                particles.push(debris);
             }
-            
-            // Add enhanced shockwave effect
-            const shockwaveIntensity = blastType + 1;
-            particles.push({
-                x: x,
-                y: y,
-                radius: 5,
-                maxRadius: 80 + blastType * 20,
-                life: 1,
-                decay: 0.04 / shockwaveIntensity,
-                color: color,
-                update() {
-                    this.radius += (this.maxRadius - this.radius) * 0.25;
-                    this.life -= this.decay;
-                },
-                draw() {
-                    ctx.globalAlpha = this.life * 0.4;
-                    ctx.strokeStyle = this.color;
-                    ctx.lineWidth = 3 + blastType;
-                    ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                    ctx.stroke();
-                    ctx.globalAlpha = 1;
-                },
-                isDead() {
-                    return this.life <= 0;
-                }
-            });
         }
 
         function createUFODeathExplosion(x, y) {
+            // Play epic UFO destruction sound if available
+            if (audioLoaded) {
+                playSound('ufo_destruction', 1.0, 1.0, 0);
+                // Layer additional explosion sounds for epic effect
+                setTimeout(() => playSound('explosion_massive', 1.2, 0.8), 200);
+                setTimeout(() => playSound('explosion_large', 1.0, 1.2), 400);
+            } else {
+                // Fallback to procedural finale explosion sounds
+                setTimeout(() => playExplosionSound(0, 2.0), 0);     // Deep boom
+                setTimeout(() => playExplosionSound(1, 1.8), 100);   // Rolling thunder  
+                setTimeout(() => playExplosionSound(2, 1.5), 200);   // Sharp crack
+                setTimeout(() => playExplosionSound(3, 1.3), 300);   // Final rumble
+            }
+            
             // Create massive screen shake for UFO destruction
             createScreenShake(25, 45); // Intense shake for 45 frames
             
@@ -2213,7 +2569,7 @@
         }
 
         // Universal fire function that can be called from keyboard, mouse, or touch
-        function fireWeapon(colorKey = null) {
+        function fireWeapon(colorKey = null, inputType = 'keyboard', inputData = null) {
             if (!gameStarted) return;
             
             // Don't fire if UFO is destroyed/null
@@ -2251,7 +2607,15 @@
             if (ufo) {
                 fireworks.push(new Firework(launchX, launchY, color, ufo));
                 cannon.fire();
-                playFireSound();
+                
+                // Play launch sound with input-specific variations
+                if (inputType === 'keyboard') {
+                    playFireSound('keyboard', colorKey, null);
+                } else if (inputType === 'touch' && inputData) {
+                    playFireSound('touch', null, inputData);
+                } else {
+                    playFireSound('mouse', null, null);
+                }
             }
         }
 
@@ -2274,7 +2638,7 @@
             }
             
             // Fire weapon for ALL keys including space - no special fullscreen handling
-            fireWeapon(e.key.toLowerCase());
+            fireWeapon(e.key.toLowerCase(), 'keyboard', null);
         }
         
         // Fullscreen functionality
@@ -2388,7 +2752,7 @@
                 return;
             }
             
-            fireWeapon();
+            fireWeapon(null, 'mouse', { x: e.clientX, y: e.clientY });
         }
 
         // Handle touch events for mobile devices
@@ -2403,7 +2767,12 @@
                 return;
             }
             
-            fireWeapon();
+            // Get touch position for audio variation
+            const touch = e.touches && e.touches.length > 0 ? e.touches[0] : 
+                         e.changedTouches && e.changedTouches.length > 0 ? e.changedTouches[0] : 
+                         { clientX: canvas.width / 2, clientY: canvas.height / 2 };
+            
+            fireWeapon(null, 'touch', { x: touch.clientX, y: touch.clientY });
         }
 
         function update() {
@@ -2433,7 +2802,12 @@
                 fw.update();
 
                 if (fw.hitTarget() && ufo && ufo.health > 0) {
-                    createExplosion(fw.x, fw.y, fw.color, fw.blastType);
+                    // Determine hit type based on UFO health
+                    const hitType = ufo.health < 30 ? 'critical' : 'normal';
+                    
+                    // Create realistic UFO debris instead of blast circles
+                    const hitIntensity = (fw.blastType + 1) * 0.3 + (hitType === 'critical' ? 0.7 : 0.3);
+                    createUFODebris(fw.x, fw.y, hitIntensity);
                     
                     // Add small screen shake on UFO hit
                     createScreenShake(5, 8);
@@ -2443,7 +2817,14 @@
                     hits++;
                     scoreElement.textContent = score;
                     hitsElement.textContent = hits;
-                    playExplosionSound();
+                    
+                    // Play dynamic explosion sound based on blast type and intensity
+                    const explosionIntensity = (fw.blastType + 1) * 0.25; // 0.25 to 1.0
+                    playExplosionSound(fw.blastType, explosionIntensity);
+                    
+                    // Play UFO hit sound with location-based variation
+                    playUFOHitSound({ x: fw.x, y: fw.y }, hitType);
+                    
                     fireworks.splice(i, 1);
                     
                     // Check if UFO is destroyed
