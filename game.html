@@ -277,6 +277,7 @@
         <p>Hits: <span id="hits">0</span></p>
         <p>Kills: <span id="kills">0</span></p>
         <p>UFO Health: <span id="ufoHealth">100</span>%</p>
+        <p>UFO Flares: <span id="ufoFlares">8</span>/8 🔥</p>
     </div>
     
     <div id="copyrightNotice" class="hidden" style="position: fixed; bottom: 20px; right: 20px; font-size: 11px; color: #000000; text-align: right; z-index: 100; pointer-events: none; background: rgba(255,255,255,0.1); padding: 8px 12px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); backdrop-filter: blur(10px);">
@@ -425,6 +426,7 @@
         const hitsElement = document.getElementById('hits');
         const killsElement = document.getElementById('kills');
         const ufoHealthElement = document.getElementById('ufoHealth');
+        const ufoFlaresElement = document.getElementById('ufoFlares');
 
         // Audio context and sound buffers
         let audioCtx;
@@ -913,6 +915,7 @@
         let cannon, ufo, commando;
         let fireworks = [];
         let particles = [];
+        let flares = []; // UFO defensive flares
         let stars = [];
         let grassPatches = [];
         let mouseX = canvas.width / 2;
@@ -1295,6 +1298,15 @@
                         phase: Math.random() * Math.PI * 2
                     });
                 }
+                
+                // Defensive flare system
+                this.flareCount = 16; // Increased number of flares available
+                this.maxFlares = 16; // Increased maximum flares
+                this.flareReloadTime = 240; // 4 seconds at 60fps to reload one flare (faster reload)
+                this.lastFlareTime = 0;
+                this.flareReloadTimer = 0;
+                this.flareRange = 250; // Increased detection range for incoming missiles
+                this.flareConfusionRadius = 150; // Increased radius where flares can confuse missiles
             }
 
             takeDamage(damage) {
@@ -1328,11 +1340,20 @@
 
             checkForIncomingFireworks(fireworks) {
                 this.isDodging = false;
+                let shouldDeployFlares = false;
+                let closestThreat = null;
+                let closestDistance = Infinity;
                 
                 fireworks.forEach(fw => {
                     const dx = fw.x - this.x;
                     const dy = fw.y - this.y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    // Track closest threat for flare deployment
+                    if (distance < closestDistance && distance < this.flareRange) {
+                        closestDistance = distance;
+                        closestThreat = fw;
+                    }
                     
                     // If firework is close and approaching
                     if (distance < 150 && distance > 30) {
@@ -1357,9 +1378,54 @@
                             // Add some randomness
                             this.dodgeDirection.x += (Math.random() - 0.5) * 2;
                             this.dodgeDirection.y += (Math.random() - 0.5) * 1;
+                            
+                            // Consider deploying flares for close threats
+                            if (distance < 120) {
+                                shouldDeployFlares = true;
+                            }
                         }
                     }
                 });
+                
+                // Deploy flares if threatened and available
+                if (shouldDeployFlares && this.canDeployFlares()) {
+                    this.deployFlares();
+                }
+            }
+            
+            canDeployFlares() {
+                const now = Date.now();
+                return this.flareCount > 0 && (now - this.lastFlareTime) > 800; // Reduced cooldown from 1000ms to 800ms
+            }
+            
+            deployFlares() {
+                if (!this.canDeployFlares()) return;
+                
+                this.lastFlareTime = Date.now();
+                
+                // Deploy more flares based on threat level
+                const threatLevel = Math.min(4, Math.ceil(this.flareCount / 4)); // 1-4 flares
+                const flaresToDeploy = Math.min(threatLevel, this.flareCount);
+                this.flareCount = Math.max(0, this.flareCount - flaresToDeploy);
+                
+                // Update flare counter display
+                if (ufoFlaresElement) {
+                    ufoFlaresElement.textContent = `${this.flareCount}`;
+                }
+                
+                // Deploy flares with better spread pattern
+                for (let i = 0; i < flaresToDeploy; i++) {
+                    const angle = (i / flaresToDeploy) * Math.PI * 2; // Circular spread
+                    const distance = 20 + Math.random() * 30; // Random distance from UFO
+                    const offsetX = Math.cos(angle) * distance;
+                    const offsetY = Math.sin(angle) * distance + 15; // Slight downward offset
+                    flares.push(new Flare(this.x + offsetX, this.y + offsetY));
+                }
+                
+                // Play flare deployment sound (if available)
+                if (typeof playExplosionSound === 'function') {
+                    playExplosionSound(1, 0.3); // Soft flare deployment sound
+                }
             }
 
             update(fireworks) {
@@ -1457,6 +1523,20 @@
                 // Bobbing motion
                 this.bobOffset += 0.03;
                 this.y += Math.sin(this.bobOffset) * 0.5;
+                
+                // Flare reload system
+                if (this.flareCount < this.maxFlares) {
+                    this.flareReloadTimer++;
+                    if (this.flareReloadTimer >= this.flareReloadTime) {
+                        this.flareCount++;
+                        this.flareReloadTimer = 0;
+                        
+                        // Update flare counter display
+                        if (ufoFlaresElement) {
+                            ufoFlaresElement.textContent = `${this.flareCount}`;
+                        }
+                    }
+                }
                 
                 // Update light phases
                 this.lights.forEach(light => {
@@ -1632,6 +1712,173 @@
             }
         }
 
+        class Flare {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 8; // More spread for better coverage
+                this.vy = Math.random() * 2 + 0.5; // Even slower fall
+                this.life = 1.0;
+                this.maxLife = 1.0;
+                this.decay = 0.002; // Much slower decay - lasts much longer
+                this.heat = 2.0; // Very high heat signature
+                this.heatDecay = 0.001; // Very slow heat decay
+                this.size = 2 + Math.random() * 3; // Reduced size for better visual balance
+                this.brightness = 1.2 + Math.random() * 0.5;
+                this.sparklePhase = Math.random() * Math.PI * 2;
+                this.gravity = 0.02; // Much reduced gravity - almost floats
+                this.confusionRadius = 180; // Much larger confusion radius
+                this.magneticPull = 0.8; // New: attracts missiles strongly
+                
+                // Enhanced flare visual effects
+                this.coreColor = '#fff';
+                this.flameColors = ['#ff2200', '#ff6600', '#ffaa00', '#ffffff', '#ff0044', '#ffff00'];
+                this.particles = [];
+                this.pulseIntensity = 0;
+                this.pulsePhase = Math.random() * Math.PI * 2;
+                
+                // Create trailing particles for spectacular effect - reduced count
+                for (let i = 0; i < 8; i++) { // Reduced from 15 to 8
+                    this.particles.push({
+                        x: this.x,
+                        y: this.y,
+                        vx: (Math.random() - 0.5) * 3,
+                        vy: Math.random() * 1.5,
+                        life: 0.7 + Math.random() * 0.6,
+                        size: 1.5 + Math.random() * 2.5,
+                        color: this.flameColors[Math.floor(Math.random() * this.flameColors.length)]
+                    });
+                }
+            }
+            
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += this.gravity;
+                this.vx *= 0.99; // Less air resistance
+                
+                this.life -= this.decay;
+                this.heat -= this.heatDecay;
+                this.sparklePhase += 0.4;
+                this.pulsePhase += 0.25;
+                this.pulseIntensity = 0.5 + 0.5 * Math.sin(this.pulsePhase);
+                
+                // Update trailing particles
+                this.particles.forEach(particle => {
+                    particle.x += particle.vx;
+                    particle.y += particle.vy;
+                    particle.vy += 0.03; // Reduced gravity on particles
+                    particle.life -= 0.015; // Slower particle decay
+                    particle.vx *= 0.97; // Less friction
+                });
+                
+                // Remove dead particles and add new ones - reduced frequency
+                this.particles = this.particles.filter(p => p.life > 0);
+                if (this.particles.length < 4 && this.life > 0.2) { // Reduced from 8 to 4
+                    for (let i = 0; i < 1; i++) { // Reduced from 2 to 1
+                        this.particles.push({
+                            x: this.x + (Math.random() - 0.5) * 10, // Reduced spread
+                            y: this.y + (Math.random() - 0.5) * 5,
+                            vx: (Math.random() - 0.5) * 3,
+                            vy: Math.random() * 1.5,
+                            life: 0.5 + Math.random() * 0.4, // Shorter life
+                            size: 1 + Math.random() * 1.5, // Smaller particles
+                            color: this.flameColors[Math.floor(Math.random() * this.flameColors.length)]
+                        });
+                    }
+                }
+            }
+            
+            draw() {
+                ctx.save();
+                
+                // Draw trailing particles first
+                this.particles.forEach(particle => {
+                    ctx.globalAlpha = particle.life * this.life * 0.8;
+                    ctx.fillStyle = particle.color;
+                    ctx.beginPath();
+                    ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                
+                // Draw main flare with enhanced effects
+                ctx.globalAlpha = this.life;
+                
+                // Outer massive glow with pulsing - reduced size
+                const glowRadius = this.size * 3 * this.pulseIntensity; // Reduced from 6x to 3x
+                const glowGradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, glowRadius);
+                glowGradient.addColorStop(0, 'rgba(255, 220, 100, 0.6)'); // Reduced opacity
+                glowGradient.addColorStop(0.3, 'rgba(255, 150, 50, 0.4)');
+                glowGradient.addColorStop(0.7, 'rgba(255, 80, 20, 0.2)');
+                glowGradient.addColorStop(1, 'rgba(255, 50, 0, 0)');
+                
+                ctx.fillStyle = glowGradient;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, glowRadius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Middle intensity ring - reduced size
+                const midRadius = this.size * 1.8; // Reduced from 3x to 1.8x
+                const midGradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, midRadius);
+                midGradient.addColorStop(0, 'rgba(255, 255, 200, 0.6)'); // Reduced opacity
+                midGradient.addColorStop(0.5, 'rgba(255, 150, 100, 0.4)');
+                midGradient.addColorStop(1, 'rgba(255, 100, 50, 0)');
+                
+                ctx.globalAlpha = this.life * 0.7; // Reduced opacity
+                ctx.fillStyle = midGradient;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, midRadius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Core flare with intense sparkling effect - reduced size
+                const sparkleIntensity = 0.8 + 0.4 * Math.sin(this.sparklePhase) * this.pulseIntensity;
+                ctx.globalAlpha = this.life * sparkleIntensity;
+                
+                // Bright white core with pulsing - smaller
+                ctx.fillStyle = this.coreColor;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size * this.pulseIntensity * 0.8, 0, Math.PI * 2); // Reduced by 20%
+                ctx.fill();
+                
+                // Hot orange outer ring - smaller
+                ctx.globalAlpha = this.life * 0.7; // Reduced opacity
+                ctx.fillStyle = '#ff4400';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size * 1.4, 0, Math.PI * 2); // Reduced from 1.8x to 1.4x
+                ctx.fill();
+                
+                // Add cross-shaped intense flash - smaller
+                ctx.globalAlpha = this.life * sparkleIntensity * 0.5; // Reduced opacity
+                ctx.fillStyle = '#ffffff';
+                const crossSize = this.size * 1.2; // Reduced from 2x to 1.2x
+                ctx.fillRect(this.x - crossSize, this.y - 0.5, crossSize * 2, 1); // Thinner lines
+                ctx.fillRect(this.x - 0.5, this.y - crossSize, 1, crossSize * 2);
+                
+                ctx.restore();
+            }
+            
+            isDead() {
+                return this.life <= 0 || this.heat <= 0;
+            }
+            
+            canConfuseMissile(missileX, missileY) {
+                const dx = this.x - missileX;
+                const dy = this.y - missileY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                // Much more effective confusion - larger range and works even with low heat
+                const effectiveRadius = this.confusionRadius * (0.5 + this.heat * 0.5);
+                return distance < effectiveRadius && this.heat > 0.05; // Works even with very low heat
+            }
+            
+            // New method to check if a missile can hit this flare
+            canBeHitByMissile(missileX, missileY) {
+                const dx = this.x - missileX;
+                const dy = this.y - missileY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                return distance < (this.size * 2 + 10); // Hit radius around flare
+            }
+        }
+
         class Firework {
             constructor(x, y, color, target) {
                 this.x = x;
@@ -1658,6 +1905,11 @@
                 this.lastTargetY = target.y;
                 this.targetVelocityX = 0;
                 this.targetVelocityY = 0;
+                
+                // Flare confusion properties
+                this.confusedByFlare = false;
+                this.confusionDuration = 0;
+                this.confusionTarget = null;
                 
                 // Create initial sparkles
                 for (let i = 0; i < 8; i++) {
@@ -1707,6 +1959,94 @@
                             targetX = this.target.x + this.targetVelocityX * interceptTime * 4;
                             targetY = this.target.y + this.targetVelocityY * interceptTime * 4;
                             break;
+                    }
+                    
+                    // FLARE CONFUSION SYSTEM - HIGHLY ENHANCED
+                    // Check if any flares can confuse this missile
+                    let confusedByFlare = false;
+                    let closestFlare = null;
+                    let closestFlareDistance = Infinity;
+                    let hitFlare = null;
+                    
+                    flares.forEach(flare => {
+                        const flareDistance = Math.sqrt((flare.x - this.x) ** 2 + (flare.y - this.y) ** 2);
+                        
+                        // Check if missile hits flare directly
+                        if (flare.canBeHitByMissile(this.x, this.y)) {
+                            hitFlare = flare;
+                        }
+                        
+                        // Check confusion range
+                        if (flare.canConfuseMissile(this.x, this.y)) {
+                            if (flareDistance < closestFlareDistance) {
+                                closestFlareDistance = flareDistance;
+                                closestFlare = flare;
+                            }
+                        }
+                    });
+                    
+                    // If missile hits a flare, explode it
+                    if (hitFlare) {
+                        // Create explosion at flare location
+                        createUFODebris(hitFlare.x, hitFlare.y, 0.8);
+                        
+                        // Play explosion sound
+                        if (typeof playExplosionSound === 'function') {
+                            playExplosionSound(Math.floor(Math.random() * 4), 0.6);
+                        }
+                        
+                        // Remove the flare and the missile
+                        const flareIndex = flares.indexOf(hitFlare);
+                        if (flareIndex > -1) {
+                            flares.splice(flareIndex, 1);
+                        }
+                        this.exploded = true;
+                        return; // Exit early, missile is destroyed
+                    }
+                    
+                    // Determine if missile gets confused by flare
+                    if (closestFlare) {
+                        // Very high base confusion chance
+                        const baseConfusion = 0.98; // 98% base confusion
+                        const heatBonus = closestFlare.heat * 0.5;
+                        const confusionChance = Math.min(0.99, baseConfusion + heatBonus); 
+                        
+                        // Enhanced distance factor
+                        const distanceFactor = Math.max(0.5, 1.5 - (closestFlareDistance / closestFlare.confusionRadius));
+                        const magneticPull = closestFlare.magneticPull || 0.8;
+                        const finalConfusionChance = confusionChance * distanceFactor * magneticPull;
+                        
+                        // Strong persistence - once confused, stay confused much longer
+                        if (!this.confusedByFlare) {
+                            this.confusedByFlare = Math.random() < finalConfusionChance;
+                            this.confusionDuration = this.confusedByFlare ? 60 + Math.random() * 120 : 0; // 1-3 seconds
+                            this.confusionTarget = closestFlare;
+                        } else {
+                            this.confusionDuration--;
+                            if (this.confusionDuration <= 0 || !this.confusionTarget) {
+                                this.confusedByFlare = false;
+                                this.confusionTarget = null;
+                            }
+                        }
+                        
+                        if (this.confusedByFlare && this.confusionTarget) {
+                            confusedByFlare = true;
+                            // Minimal noise for accurate flare tracking
+                            const flareNoise = 2 + Math.random() * 6; // Much more accurate
+                            targetX = this.confusionTarget.x + (Math.random() - 0.5) * flareNoise;
+                            targetY = this.confusionTarget.y + (Math.random() - 0.5) * flareNoise;
+                            
+                            // Much stronger attraction to flares
+                            this.seekingStrength = 0.65; // Very strong seeking toward flares
+                        }
+                    }
+                    
+                    // Reset seeking strength if not confused (for next frame)
+                    if (!confusedByFlare) {
+                        this.seekingStrength = 0.35; // Reset to original value
+                        this.confusedByFlare = false;
+                        this.confusionTarget = null;
+                        this.confusionDuration = 0;
                     }
                     
                     const dx = targetX - this.x;
@@ -2859,6 +3199,7 @@
                         ufo = null; // Remove UFO completely
                         ufoHealth = 0;
                         ufoHealthElement.textContent = "DESTROYED";
+                        ufoFlaresElement.textContent = "0";
                         
                         // Respawn UFO after 1 second delay
                         setTimeout(() => {
@@ -2866,6 +3207,7 @@
                                 ufo = new UFO();
                                 ufoHealth = 100;
                                 ufoHealthElement.textContent = ufoHealth;
+                                ufoFlaresElement.textContent = ufo.flareCount;
                             }
                         }, 1000); // 1 second delay
                     }
@@ -2902,6 +3244,17 @@
                     particles.splice(i, 1);
                 }
             }
+            
+            // Update flares
+            for (let i = flares.length - 1; i >= 0; i--) {
+                const flare = flares[i];
+                if (!flare) continue;
+                
+                flare.update();
+                if (flare.isDead()) {
+                    flares.splice(i, 1);
+                }
+            }
         }
 
         function draw() {
@@ -2930,6 +3283,7 @@
 
             fireworks.forEach(fw => fw && fw.draw());
             particles.forEach(p => p && p.draw());
+            flares.forEach(flare => flare && flare.draw()); // Draw flares on top
             
             ctx.restore();
             
@@ -2953,6 +3307,12 @@
             ufo = new UFO();
             commando = new Commando();
             createStars();
+            
+            // Initialize flare counter display
+            if (ufoFlaresElement && ufo) {
+                ufoFlaresElement.textContent = ufo.flareCount;
+            }
+            
             gameLoop();
         }
 
